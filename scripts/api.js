@@ -393,6 +393,9 @@ var XP_API = (function() {
                 setTimeout(function() { if (tip.parentNode) tip.remove(); }, options.timeout || 5000);
             }
         },
+        //
+        // TODO: Cache DOM ref to tooltip instead of searching every time!!!
+        //
         showTooltip: function(target, options) {
             if (!options || !options.text || options.enabled === false) return;
             function removeTooltip() {
