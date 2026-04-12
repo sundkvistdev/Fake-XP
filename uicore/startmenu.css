@@ -1,0 +1,105 @@
+/* Windows XP Start Menu Styles */
+#start-menu {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    width: 380px;
+    height: 450px;
+    background: #4282d6;
+    border: 1px solid #00309c;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    display: none;
+    flex-direction: column;
+    z-index: 10000;
+    box-shadow: 2px -2px 10px rgba(0, 0, 0, 0.5);
+}
+
+#start-menu.open {
+    display: flex;
+}
+
+#start-header {
+    height: 60px;
+    background: linear-gradient(to bottom, #0058e6 0%, #3f8cf3 100%);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+#start-header img {
+    width: 40px;
+    height: 40px;
+    border: 2px solid white;
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+#start-body {
+    flex-grow: 1;
+    display: flex;
+    background: white;
+    margin: 0 2px;
+}
+
+#start-left {
+    flex: 1;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+#start-right {
+    width: 150px;
+    background: #d3e5fa;
+    border-left: 1px solid #95b7e8;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.start-item {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.start-item:hover {
+    background: #316ac5;
+    color: white;
+}
+
+.start-item img {
+    width: 24px;
+    height: 24px;
+    margin-right: 10px;
+}
+
+#start-footer {
+    height: 40px;
+    background: linear-gradient(to bottom, #4282d6 0%, #0058e6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 10px;
+    gap: 10px;
+}
+
+.footer-btn {
+    display: flex;
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.footer-btn:hover {
+    text-decoration: underline;
+}

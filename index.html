@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XP Retro Desktop</title>
+    
+    <!-- UI Core Styles -->
+    <link rel="stylesheet" href="/uicore/base.css">
+    <link rel="stylesheet" href="/uicore/desktop.css">
+    <link rel="stylesheet" href="/uicore/taskbar.css">
+    <link rel="stylesheet" href="/uicore/window.css">
+    <link rel="stylesheet" href="/uicore/startmenu.css">
+  </head>
+  <body>
+    <div id="desktop">
+      <div id="desktop-icons"></div>
+      
+      <!-- Start Menu -->
+      <div id="start-menu">
+        <div id="start-header">
+          <img src="https://picsum.photos/seed/user/40/40" alt="User" referrerPolicy="no-referrer">
+          <span>Administrator</span>
+        </div>
+        <div id="start-body">
+          <div id="start-left">
+            <!-- Pinned apps -->
+          </div>
+          <div id="start-right">
+            <div class="start-item">My Documents</div>
+            <div class="start-item">My Pictures</div>
+            <div class="start-item">My Music</div>
+            <hr>
+            <div class="start-item">My Computer</div>
+            <div class="start-item">Control Panel</div>
+          </div>
+        </div>
+        <div id="start-footer">
+          <div class="footer-btn">Log Off</div>
+          <div class="footer-btn">Turn Off Computer</div>
+        </div>
+      </div>
+
+      <!-- Taskbar -->
+      <div id="taskbar">
+        <button id="start-button">start</button>
+        <div id="task-items"></div>
+        <div id="system-tray">
+          <span id="clock">00:00 AM</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts (ES5) -->
+    <script src="/scripts/vfs.js"></script>
+    <script src="/scripts/preload.js"></script>
+    <script src="/scripts/window-manager.js"></script>
+    <script src="/scripts/api.js"></script>
+    <script src="/scripts/apps.js"></script>
+    <script src="/scripts/main.js"></script>
+  </body>
+</html>
+

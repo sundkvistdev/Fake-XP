@@ -1,0 +1,49 @@
+/* Windows XP Base Styles */
+* {
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: "Tahoma", "Segoe UI", sans-serif;
+    font-size: 11px;
+}
+
+input, textarea {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+    font-family: inherit;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.xp-button {
+    background: #f0f0f0;
+    border: 1px solid #003c74;
+    padding: 2px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    box-shadow: inset -1px -1px 1px rgba(0,0,0,0.2), inset 1px 1px 1px #fff;
+    outline: none;
+}
+
+.xp-button:active {
+    box-shadow: inset 1px 1px 1px rgba(0,0,0,0.2), inset -1px -1px 1px #fff;
+}
+
+.xp-button:hover {
+    background: #e5f1fb;
+    border-color: #0054e3;
+}

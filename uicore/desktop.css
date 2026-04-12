@@ -1,0 +1,54 @@
+/* Windows XP Desktop Styles */
+#desktop {
+    width: 100vw;
+    height: 100vh;
+    background-color: #3a6ea5; /* Classic Teal */
+    background-image: url('https://picsum.photos/seed/bliss/1920/1080'); /* Fallback for Bliss */
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+}
+
+#desktop-icons {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: calc(100% - 40px);
+    width: auto;
+    gap: 10px;
+}
+
+.desktop-icon {
+    width: 75px;
+    height: 75px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+    padding: 5px;
+}
+
+.desktop-icon:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.desktop-icon img {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 5px;
+}
+
+.desktop-icon span {
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+    font-size: 11px;
+    word-break: break-all;
+}
