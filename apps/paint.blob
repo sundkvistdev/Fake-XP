@@ -1,0 +1,8 @@
+{
+  "title": "Paint",
+  "width": 600,
+  "height": 450,
+  "html": "<div class='paint-toolbar'></div><canvas id='paint-canvas'></canvas>",
+  "css": ".paint-toolbar { padding: 5px; background: #ece9d8; border-bottom: 1px solid #aca899; display: flex; gap: 5px; } .color-swatch { width: 20px; height: 20px; border: 1px solid #000; cursor: pointer; } #paint-canvas { flex-grow: 1; background: white; cursor: crosshair; }",
+  "js": "var canvas = container.querySelector('#paint-canvas'); var ctx = canvas.getContext('2d'); var drawing = false; var color = 'black'; var colors = ['black','red','green','blue','yellow','white']; colors.forEach(function(c) { var s = document.createElement('div'); s.className = 'color-swatch'; s.style.background = c; s.onclick = function() { color = c; }; container.querySelector('.paint-toolbar').appendChild(s); }); canvas.width = 600; canvas.height = 400; canvas.onmousedown = function() { drawing = true; }; canvas.onmouseup = function() { drawing = false; ctx.beginPath(); }; canvas.onmousemove = function(e) { if (!drawing) return; var rect = canvas.getBoundingClientRect(); ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.strokeStyle = color; ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top); ctx.stroke(); ctx.beginPath(); ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top); };"
+}

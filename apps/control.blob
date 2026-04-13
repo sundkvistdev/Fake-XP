@@ -1,0 +1,8 @@
+{
+  "title": "Control Panel",
+  "width": 400,
+  "height": 350,
+  "html": "<div class='cp-container'><h2>System Settings</h2><div class='cp-field'><span>Owner:</span><input type='text' id='cp-owner'></div><div class='cp-field'><span>Wallpaper:</span><input type='text' id='cp-wall'></div><div class='cp-actions'><button id='cp-apply'>Apply</button></div><hr><button id='cp-users' style='width:100%;text-align:left;padding:10px;'>👤 User Accounts</button></div>",
+  "css": ".cp-container { padding: 20px; display: flex; flex-direction: column; gap: 15px; font-family: Tahoma, sans-serif; } .cp-field { display: flex; gap: 10px; align-items: center; } .cp-field input { flex-grow: 1; } .cp-actions { display: flex; justify-content: flex-end; }",
+  "js": "var sct = XP_API.Registry.get('System'); var owner = container.querySelector('#cp-owner'); var wall = container.querySelector('#cp-wall'); owner.value = sct.Owner; wall.value = sct.Wallpaper; container.querySelector('#cp-apply').onclick = function() { sct.Owner = owner.value; sct.Wallpaper = wall.value; XP_API.Registry.set('System', sct); document.getElementById('desktop').style.backgroundImage = 'url(' + sct.Wallpaper + ')'; XP_API.showDialog({ message: 'Applied.' }); }; container.querySelector('#cp-users').onclick = function() { XP_Apps.userAccounts(); };"
+}

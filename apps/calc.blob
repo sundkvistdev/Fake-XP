@@ -1,0 +1,8 @@
+{
+  "title": "Calculator",
+  "width": 220,
+  "height": 300,
+  "html": "<div class='calc-display'>0</div><div class='calc-buttons'></div>",
+  "css": ".calc-display { background: white; border: 1px solid #7b9ebd; padding: 5px; text-align: right; font-size: 18px; margin-bottom: 10px; height: 30px; } .calc-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; } .calc-buttons button { padding: 10px; font-size: 14px; }",
+  "js": "var display = container.querySelector('.calc-display'); var btns = ['7','8','9','/','4','5','6','*','1','2','3','-','0','C','=','+']; var current = ''; btns.forEach(function(b) { var btn = document.createElement('button'); btn.innerText = b; btn.onclick = function() { if (b === 'C') { current = ''; display.innerText = '0'; } else if (b === '=') { try { display.innerText = eval(current); current = display.innerText; } catch(e) { display.innerText = 'Error'; current = ''; } } else { current += b; display.innerText = current; } }; container.querySelector('.calc-buttons').appendChild(btn); });"
+}

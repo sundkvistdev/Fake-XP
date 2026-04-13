@@ -322,9 +322,29 @@ window.onload = function() {
         setInterval(updateClock, 1000);
         updateClock();
 
+        // Disable default context menu globally
+        document.addEventListener('contextmenu', function(e) {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+            }
+        });
+
         // Start Menu Toggle
         var startBtn = document.getElementById('start-button');
         var startMenu = document.getElementById('start-menu');
+        
+        // Fix start menu position based on taskbar height
+        var updateStartMenuPos = function() {
+            var taskbar = document.getElementById('taskbar');
+            if (taskbar) {
+                var h = taskbar.offsetHeight || 30;
+                document.documentElement.style.setProperty('--taskbar-height', h + 'px');
+                startMenu.style.bottom = h + 'px';
+            }
+        };
+        setTimeout(updateStartMenuPos, 100);
+        window.addEventListener('resize', updateStartMenuPos);
+
         startBtn.onclick = function(e) {
             e.stopPropagation();
             startMenu.classList.toggle('open');
@@ -340,81 +360,32 @@ window.onload = function() {
 
         // Desktop Icons (Dynamic from VFS)
         window.renderDesktop = function() {
-            var iconContainer = document.getElementById('desktop-icons');
-            if (!iconContainer) return;
-            iconContainer.innerHTML = '';
-            var items = VFS.ls('C:/Desktop');
-            var showHidden = XP_API.Registry.get('Apps/Explorer/ShowHidden');
-            items.forEach(function(item) {
-                if (!showHidden && item.indexOf('.') === 0) return;
-                var path = 'C:/Desktop/' + item;
-                var stat = VFS.stat(path);
-                var iconUrl = XP_API.getIcon(path);
-
-                var div = XP_API.createElement({
-                    className: 'desktop-icon',
-                    innerHTML: '<img src="' + iconUrl + '" referrerPolicy="no-referrer"><span>' + item.replace('.lnk', '') + '</span>',
-                    tooltip: item.replace('.lnk', '') + '\n' + (stat.type === 'dir' ? 'Folder' : 'File'),
-                    contextMenu: [
-                        { text: 'Open', action: function() { div.onclick(); } },
-                        { text: 'Rename', action: function() {
-                            XP_API.showDialog({
-                                type: 'prompt',
-                                title: 'Rename',
-                                message: 'Enter new name:',
-                                onOk: function(newName) {
-                                    if (newName) {
-                                        VFS.rename(path, newName);
-                                        renderDesktop();
-                                    }
-                                }
-                            });
-                        } },
-                        { text: 'Delete', action: function() {
-                            XP_API.showDialog({
-                                type: 'confirm',
-                                title: 'Confirm Delete',
-                                message: 'Are you sure you want to delete this shortcut?',
-                                onOk: function() {
-                                    VFS.delete(path);
-                                    renderDesktop();
-                                }
-                            });
-                        } },
-                        { separator: true },
-                        { text: 'Properties', action: function() {
-                             XP_API.showDialog({ title: item + ' Properties', message: 'Shortcut to ' + item + '\nLocation: ' + path });
-                        } }
-                    ],
-                    onclick: function() {
-                        if (stat.isLink) {
-                            try {
-                                var linkData = JSON.parse(stat.content);
-                                XP_API.exec('C:/Apps/' + linkData.app + '.js', [linkData.args]);
-                            } catch (e) {
-                                // Fallback for old string format if any
-                                var cmd = stat.content.split(':');
-                                XP_API.exec('C:/Apps/' + cmd[0] + '.js', [cmd[1]]);
-                            }
-                        } else if (stat.type === 'file') {
-                            XP_API.exec('C:/Apps/notepad.js', [path]);
-                        } else {
-                            XP_API.exec('C:/Apps/explorer.js', [path]);
-                        }
-                    }
-                });
-                iconContainer.appendChild(div);
-            });
-        }
+            XP_API.exec('explorer', { mode: 'desktop' });
+        };
         renderDesktop();
 
         // Desktop Context Menu
         document.getElementById('desktop').oncontextmenu = function(e) {
             e.preventDefault();
-            WindowManager.showContextMenu(e.clientX, e.clientY, [
+            XP_API.showContextMenu(e.clientX, e.clientY, [
+                { text: 'Arrange Icons By', menu: [
+                    { text: 'Name' },
+                    { text: 'Size' },
+                    { text: 'Type' },
+                    { text: 'Modified' }
+                ]},
                 { text: 'Refresh', action: function() { renderDesktop(); } },
                 { separator: true },
-                { text: 'Properties', action: function() { XP_API.exec('C:/Apps/display.js'); } }
+                { text: 'Paste', action: function() { XP_API.showDialog({ message: 'Nothing to paste.' }); } },
+                { text: 'Paste Shortcut' },
+                { separator: true },
+                { text: 'New', menu: [
+                    { text: 'Folder', action: function() { VFS.mkdir('C:/Desktop/New Folder'); renderDesktop(); } },
+                    { text: 'Shortcut' },
+                    { text: 'Text Document', action: function() { VFS.writeFile('C:/Desktop/New Text Document.txt', ''); renderDesktop(); } }
+                ]},
+                { separator: true },
+                { text: 'Properties', action: function() { XP_API.exec('displayProperties'); } }
             ]);
         };
 
@@ -423,7 +394,7 @@ window.onload = function() {
             title: 'CentralFirm Antivirus',
             icon: 'https://img.icons8.com/color/48/000000/shield.png',
             onclick: function() {
-                XP_API.exec('C:/Apps/antivirus.js');
+                XP_API.exec('antivirus');
             }
         });
 
@@ -451,10 +422,7 @@ window.onload = function() {
                 className: 'start-item',
                 innerHTML: '<img src="' + iconUrl + '" referrerPolicy="no-referrer"><span>' + item.replace('.lnk', '') + '</span>',
                 onclick: function() {
-                    if (stat.isLink) {
-                        var linkData = JSON.parse(stat.content);
-                        XP_API.exec('C:/Apps/' + linkData.app + '.js', [linkData.args]);
-                    }
+                    XP_API.exec(path);
                     startMenu.classList.remove('open');
                 }
             });
@@ -465,12 +433,12 @@ window.onload = function() {
         var startRight = document.getElementById('start-right');
         startRight.innerHTML = '';
         var rightItems = [
-            { name: 'My Documents', action: function() { XP_API.exec('C:/Apps/explorer.js', ['C:/Documents']); } },
+            { name: 'My Documents', action: function() { XP_API.exec('explorer', ['C:/Documents']); } },
             { name: 'My Pictures', action: function() { XP_API.showDialog({ message: 'My Pictures is empty.' }); } },
             { name: 'My Music', action: function() { XP_API.showDialog({ message: 'My Music is empty.' }); } },
             { separator: true },
-            { name: 'My Computer', action: function() { XP_API.exec('C:/Apps/explorer.js', ['C:']); } },
-            { name: 'Control Panel', action: function() { XP_API.exec('C:/Apps/control.js'); } }
+            { name: 'My Computer', action: function() { XP_API.exec('explorer', ['C:']); } },
+            { name: 'Control Panel', action: function() { XP_API.exec('control'); } }
         ];
 
         rightItems.forEach(function(item) {

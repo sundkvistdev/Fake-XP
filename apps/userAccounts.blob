@@ -1,0 +1,8 @@
+{
+  "title": "User Accounts",
+  "width": 500,
+  "height": 400,
+  "html": "<div class='ua-container'><h3>Pick a task...</h3><div class='ua-task' id='ua-create'>➕ Create a new account</div><hr><h3>or pick an account to change</h3><div class='ua-list'></div></div>",
+  "css": ".ua-container { padding: 20px; font-family: Tahoma, sans-serif; } .ua-task { cursor: pointer; color: #0000ff; margin-bottom: 10px; } .ua-task:hover { text-decoration: underline; } .ua-user-item { display: flex; align-items: center; gap: 10px; padding: 10px; cursor: pointer; border: 1px solid transparent; } .ua-user-item:hover { border: 1px solid #ccc; background: #f9f9f9; }",
+  "js": "var list = container.querySelector('.ua-list'); function render() { var users = XP_API.Registry.get('Security/Users'); list.innerHTML = ''; for (var u in users) { (function(user) { var div = document.createElement('div'); div.className = 'ua-user-item'; div.innerHTML = '<img src=\"' + user.avatar + '\" style=\"width:48px;height:48px;\"><div><div style=\"font-weight:bold;\">' + user.username + '</div><div style=\"font-size:11px;color:#666;\">' + user.privilege + '</div></div>'; list.appendChild(div); })(users[u]); } } render(); container.querySelector('#ua-create').onclick = function() { XP_API.UAC.requestEscalation(function(s) { if (s) { XP_API.showDialog({ type: 'prompt', title: 'New User', message: 'Username:', onOk: function(name) { if (name) { var users = XP_API.Registry.get('Security/Users'); users[name] = { username: name, passwordHash: '', privilege: 'user', avatar: 'https://img.icons8.com/color/48/000000/user.png' }; XP_API.Registry.set('Security/Users', users); render(); } } }); } }); };"
+}

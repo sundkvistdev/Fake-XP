@@ -135,8 +135,7 @@ var XP_API = (function() {
                     width: 400,
                     height: 320,
                     isDialog: true,
-                    content: container,
-                    fullModal: true,
+                    content: container
                 });
                 
                 // Ensure UAC is above overlay
@@ -200,19 +199,38 @@ var XP_API = (function() {
             return WindowManager.createElement(options);
         },
         exec: function(path, args) {
-            var script = VFS.readFile(path);
-            if (script) {
-                try {
-                    // Create a function from the script and execute it with args
-                    var fn = new Function('args', script);
-                    fn(args || []);
-                    return true;
-                } catch (e) {
-                    XP_API.showDialog({ title: 'System Error', message: 'Failed to execute ' + path + ': ' + e.message });
-                    return false;
+            // Handle .lnk files explicitly
+            if (path.endsWith('.lnk')) {
+                var stat = VFS.stat(path);
+                if (stat && stat.isLink) {
+                    try {
+                        var linkData = JSON.parse(stat.content);
+                        return XP_API.exec(linkData.app, [linkData.args]);
+                    } catch (e) {
+                        console.error('Failed to parse link:', path, e);
+                    }
                 }
             }
-            return false;
+
+            // Handle file associations
+            if (path.includes('.')) {
+                var ext = path.split('.').pop().toLowerCase();
+                var associations = XP_API.Registry.get('System/Associations');
+                if (associations && associations[ext]) {
+                    var app = associations[ext];
+                    if (app === 'ADR') {
+                        ADR.load(path, args);
+                    } else {
+                        // If it's an app name, load it with the file as argument
+                        ADR.load(app, [path, ...(args || [])]);
+                    }
+                    return true;
+                }
+            }
+            
+            // Default: Use ADR for direct app execution
+            ADR.load(path, args);
+            return true;
         },
         getSCT: function() {
             return this.Registry.get('System');
@@ -235,13 +253,27 @@ var XP_API = (function() {
             if (!stat) return 'https://img.icons8.com/color/48/000000/file.png';
 
             var iconUrl = 'https://img.icons8.com/color/48/000000/file.png';
-            if (stat.type === 'dir') iconUrl = 'https://img.icons8.com/color/48/000000/folder-invoices.png';
-            else if (path.indexOf('.txt') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/notepad.png';
-            else if (path.indexOf('.exe') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/shield.png';
-            else if (path.indexOf('.lnk') !== -1) {
-                if (path.indexOf('My Computer') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/monitor.png';
-                else if (path.indexOf('Notepad') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/notepad.png';
-                else if (path.indexOf('Command Prompt') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/console.png';
+            if (stat.type === 'dir') {
+                iconUrl = 'https://img.icons8.com/color/48/000000/folder-invoices.png';
+            } else {
+                var ext = path.split('.').pop().toLowerCase();
+                var associations = XP_API.Registry.get('System/Associations');
+                if (associations && associations[ext]) {
+                    // Try to get icon from association
+                    var app = associations[ext];
+                    if (app === 'notepad') iconUrl = 'https://img.icons8.com/color/48/000000/notepad.png';
+                    else if (app === 'calc') iconUrl = 'https://img.icons8.com/color/48/000000/calculator.png';
+                    else if (app === 'paint') iconUrl = 'https://img.icons8.com/color/48/000000/paint-palette.png';
+                    else if (app === 'cmd') iconUrl = 'https://img.icons8.com/color/48/000000/console.png';
+                    else if (app === 'ADR') iconUrl = 'https://img.icons8.com/color/48/000000/shield.png';
+                }
+                
+                // Specific overrides
+                if (ext === 'lnk') {
+                    if (path.indexOf('My Computer') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/monitor.png';
+                    else if (path.indexOf('Notepad') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/notepad.png';
+                    else if (path.indexOf('Command Prompt') !== -1) iconUrl = 'https://img.icons8.com/color/48/000000/console.png';
+                }
             }
             
             cache[path] = iconUrl;
@@ -256,7 +288,20 @@ var XP_API = (function() {
                 if (!data) {
                     // Fallback if VFS initialization failed
                     var initial = {
-                        System: { Version: '1.0.0', Owner: 'User', Theme: 'Luna', Wallpaper: 'https://picsum.photos/seed/xp/1920/1080' },
+                        System: { 
+                            Version: '1.0.0', 
+                            Owner: 'User', 
+                            Theme: 'Luna', 
+                            Wallpaper: 'https://picsum.photos/seed/xp/1920/1080',
+                            Associations: {
+                                'txt': 'notepad',
+                                'js': 'ADR',
+                                'lnk': 'shell',
+                                'bmp': 'paint',
+                                'png': 'paint',
+                                'jpg': 'paint'
+                            }
+                        },
                         Apps: { Notepad: {}, Explorer: {} }
                     };
                     VFS.writeFile(registryPath, JSON.stringify(initial));
@@ -394,9 +439,6 @@ var XP_API = (function() {
                 setTimeout(function() { if (tip.parentNode) tip.remove(); }, options.timeout || 5000);
             }
         },
-        //
-        // TODO: Cache DOM ref to tooltip instead of searching every time!!!
-        //
         showTooltip: function(target, options) {
             if (!options || !options.text || options.enabled === false) return;
             function removeTooltip() {
@@ -470,19 +512,50 @@ var XP_API = (function() {
             msg.style.fontSize = '12px';
             msg.style.flex = '1';
             msg.style.color = '#333';
-            msg.innerText = options.message;
+            msg.innerText = options.message || '';
             topPart.appendChild(msg);
             
             container.appendChild(topPart);
 
             var input;
             if (options.type === 'prompt') {
-                input = document.createElement('input');
-                input.type = 'text';
-                input.style.width = '100%';
-                input.style.border = '1px solid #7f9db9';
-                input.style.padding = '2px';
+                input = FCCF.Controls.Input({
+                    value: options.defaultValue || '',
+                    style: { width: '100%' }
+                });
                 container.appendChild(input);
+            }
+
+            if (options.multiSelect) {
+                const list = FCCF.Controls.List({
+                    items: options.items || [],
+                    style: { height: '100px', background: 'white', border: '1px solid #7f9db9' },
+                    onItemClick: (item) => {
+                        // Handle multi-select logic if needed
+                    }
+                });
+                container.appendChild(list.el);
+            }
+
+            if (options.dropdown) {
+                const dropdown = FCCF.Controls.Dropdown({
+                    items: options.items || [],
+                    style: { width: '100%' },
+                    onChange: options.onDropdownChange
+                });
+                container.appendChild(dropdown);
+            }
+
+            if (options.showProgress) {
+                const progress = FCCF.Controls.ProgressBar({ value: options.progress || 0 });
+                container.appendChild(progress.el);
+                options.setProgress = progress.setProgress;
+            }
+
+            if (options.controls) {
+                options.controls.forEach(function(ctrl) {
+                    container.appendChild(ctrl);
+                });
             }
 
             var btnContainer = document.createElement('div');
@@ -492,37 +565,69 @@ var XP_API = (function() {
             btnContainer.style.marginTop = 'auto';
             container.appendChild(btnContainer);
 
+            var win;
+
             var okBtn = document.createElement('button');
-            okBtn.innerText = 'OK';
+            okBtn.innerText = options.okText || 'OK';
             okBtn.className = 'xp-button';
             okBtn.style.minWidth = '75px';
             okBtn.onclick = function() {
                 if (options.onOk) options.onOk(options.type === 'prompt' ? input.value : true);
-                XP_API.closeWindow(win.id);
+                win.close();
             };
             btnContainer.appendChild(okBtn);
 
-            if (options.type === 'confirm' || options.type === 'prompt') {
+            if (options.type === 'confirm' || options.type === 'prompt' || options.showCancel) {
                 var cancelBtn = document.createElement('button');
-                cancelBtn.innerText = 'Cancel';
+                cancelBtn.innerText = options.cancelText || 'Cancel';
                 cancelBtn.className = 'xp-button';
                 cancelBtn.style.minWidth = '75px';
                 cancelBtn.onclick = function() {
                     if (options.onCancel) options.onCancel();
-                    XP_API.closeWindow(win.id);
+                    win.close();
                 };
                 btnContainer.appendChild(cancelBtn);
             }
 
-            var win = WindowManager.create({
+            win = WindowManager.create({
                 title: options.title || 'System Message',
                 width: options.width || 350,
-                height: options.height || (options.type === 'prompt' ? 180 : 150),
+                height: options.height || (options.controls || options.multiSelect || options.dropdown ? 300 : (options.type === 'prompt' ? 180 : 150)),
                 isDialog: true,
-                content: container
+                content: container,
+                type: options.modal ? 'modal' : (options.topmodal ? 'topmodal' : 'normal'),
+                parent: options.parent,
+                resizable: !!options.resizable
             });
             
             if (input) setTimeout(function() { input.focus(); }, 100);
+            return win;
+        },
+        showContextMenu: function(x, y, items) {
+            WindowManager.showContextMenu(x, y, items);
+        },
+        showInstaller: function(options) {
+            const installer = FCCF.Controls.Installer({
+                steps: options.steps,
+                onFinish: () => {
+                    if (options.onFinish) options.onFinish();
+                    XP_API.closeWindow(winId);
+                },
+                onCancel: () => {
+                    if (options.onCancel) options.onCancel();
+                    XP_API.closeWindow(winId);
+                }
+            });
+            
+            const winId = XP_API.createWindow({
+                title: options.title || 'Setup',
+                width: options.width || 500,
+                height: options.height || 400,
+                isDialog: true,
+                content: installer,
+                type: options.modal ? 'modal' : 'normal'
+            });
+            return winId;
         }
     };
 })();

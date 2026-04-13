@@ -45,18 +45,54 @@ var WindowManager = (function() {
         this.x = options.x || (50 + windows.length * 20);
         this.y = options.y || (50 + windows.length * 20);
         this.isDialog = !!options.isDialog;
+        this.type = options.type || 'normal'; // normal, modal, sub, topmodal
+        this.parent = options.parent;
+        this.resizable = !!options.resizable;
         this.isMinimized = false;
         this.isMaximized = false;
         this.onClose = options.onClose;
-        this.prevRect = null; // For restoring from maximized
-        /**
-         * @type {boolean}
-         */
-        this.fullModal = options.fullModal;
+        this.prevRect = null;
+
+        if (this.type === 'topmodal') {
+            this._createOverlay();
+        } else if (this.type === 'modal' && this.parent) {
+            this._createModalOverlay();
+        }
 
         this.element = this._createUI(options.content);
         this._initEvents();
     }
+
+    Window.prototype._createOverlay = function() {
+        var overlay = document.createElement('div');
+        overlay.id = this.id + '-overlay';
+        overlay.className = 'topmodal-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = 'rgba(0,0,0,0.5)';
+        overlay.style.zIndex = '15000';
+        document.body.appendChild(overlay);
+        this.overlay = overlay;
+    };
+
+    Window.prototype._createModalOverlay = function() {
+        var parentWin = WindowManager.getById(this.parent);
+        if (!parentWin) return;
+        var overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = 'rgba(255,255,255,0.2)';
+        overlay.style.zIndex = '1000';
+        parentWin.element.querySelector('.window-content').appendChild(overlay);
+        this.modalOverlay = overlay;
+    };
 
     Window.prototype._createUI = function(content) {
         var win = document.createElement('div');
@@ -126,6 +162,42 @@ var WindowManager = (function() {
         win.appendChild(titlebar);
         win.appendChild(contentArea);
         
+        if (this.resizable) {
+            var resizeHandle = document.createElement('div');
+            resizeHandle.className = 'window-resize-handle';
+            resizeHandle.style.position = 'absolute';
+            resizeHandle.style.right = '0';
+            resizeHandle.style.bottom = '0';
+            resizeHandle.style.width = '10px';
+            resizeHandle.style.height = '10px';
+            resizeHandle.style.cursor = 'nwse-resize';
+            
+            resizeHandle.onmousedown = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var startWidth = self.width;
+                var startHeight = self.height;
+                var startX = e.clientX;
+                var startY = e.clientY;
+                
+                var onMouseMove = function(moveEvent) {
+                    self.width = startWidth + (moveEvent.clientX - startX);
+                    self.height = startHeight + (moveEvent.clientY - startY);
+                    self.element.style.width = self.width + 'px';
+                    self.element.style.height = self.height + 'px';
+                };
+                
+                var onMouseUp = function() {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    document.removeEventListener('mouseup', onMouseUp);
+                };
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            };
+            win.appendChild(resizeHandle);
+        }
+
         document.getElementById('desktop').appendChild(win);
         return win;
     };
@@ -141,14 +213,12 @@ var WindowManager = (function() {
             isDragging = true;
             offsetX = e.clientX - self.element.offsetLeft;
             offsetY = e.clientY - self.element.offsetTop;
-            if (!self.fullModal)
-                self.focus();
+            self.focus();
         };
 
-        if (!self.fullModal)
-            this.element.onmousedown = function() {
-                self.focus();
-            };
+        this.element.onmousedown = function() {
+            self.focus();
+        };
 
         document.addEventListener('mousemove', function(e) {
             if (isDragging) {
@@ -172,8 +242,13 @@ var WindowManager = (function() {
         
         // Update Z-indices and active state
         windows.forEach(function(w, index) {
-            w.element.style.zIndex = baseZIndex + index;
+            var z = baseZIndex + (index * 10); // Use step of 10 to allow overlays in between
+            if (w.type === 'topmodal') z += 50000;
+            w.element.style.zIndex = z;
             w.element.classList.remove('active');
+            
+            if (w.overlay) w.overlay.style.zIndex = z - 1;
+            if (w.modalOverlay) w.modalOverlay.style.zIndex = z - 1;
         });
 
         this.element.classList.add('active');
@@ -256,6 +331,8 @@ var WindowManager = (function() {
 
     Window.prototype.close = function() {
         if (this.onClose) this.onClose();
+        if (this.overlay) this.overlay.remove();
+        if (this.modalOverlay) this.modalOverlay.remove();
         this.element.remove();
         var self = this;
         windows = windows.filter(function(w) { return w.id !== self.id; });
@@ -273,7 +350,9 @@ var WindowManager = (function() {
     return {
         createElement: createElement,
         showContextMenu: function(x, y, items) {
-            var existing = document.querySelector('.context-menu');
+            if (!items || items.length === 0) return;
+            
+            var existing = document.querySelector('.fccf-menu.context-menu');
             if (existing) existing.remove();
 
             // Close start menu when a context menu is shown
@@ -282,38 +361,10 @@ var WindowManager = (function() {
                 startMenu.classList.remove('open');
             }
 
-            var menu = createElement({
-                className: 'context-menu',
-                style: { left: x + 'px', top: y + 'px' },
-                onmousedown: function(e) { e.stopPropagation(); }
-            });
-
-            items.forEach(function(item) {
-                if (item.separator) {
-                    menu.appendChild(createElement({ className: 'context-separator' }));
-                    return;
-                }
-                var div = createElement({
-                    className: 'context-item',
-                    innerText: item.text,
-                    onclick: function(e) {
-                        e.stopPropagation();
-                        if (item.action) item.action();
-                        menu.remove();
-                    }
-                });
-                menu.appendChild(div);
-            });
-
-            document.body.appendChild(menu);
-            
-            var closeMenu = function() {
-                menu.remove();
-                document.removeEventListener('mousedown', closeMenu);
-            };
-            setTimeout(function() {
-                document.addEventListener('mousedown', closeMenu);
-            }, 10);
+            var menu = FCCF.Controls.Menu({ items: items });
+            menu.el.classList.add('context-menu');
+            document.body.appendChild(menu.el);
+            menu.show(x, y);
         },
         create: function(options) {
             var win = new Window(options);

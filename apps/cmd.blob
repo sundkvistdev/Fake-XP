@@ -1,0 +1,8 @@
+{
+  "title": "Command Prompt",
+  "width": 600,
+  "height": 400,
+  "html": "<div class='cmd-container'><div class='cmd-output'></div><div class='cmd-input-line'><span>C:\\></span><input type='text' class='cmd-input' autofocus></div></div>",
+  "css": ".cmd-container { background: black; color: #00ff00; height: 100%; padding: 10px; font-family: monospace; display: flex; flex-direction: column; } .cmd-output { flex-grow: 1; overflow: auto; white-space: pre-wrap; margin-bottom: 5px; } .cmd-input-line { display: flex; gap: 5px; } .cmd-input { background: transparent; border: none; color: #00ff00; flex-grow: 1; outline: none; font-family: inherit; }",
+  "js": "var output = container.querySelector('.cmd-output'); var input = container.querySelector('.cmd-input'); output.innerHTML = 'Microsoft Windows XP [Version 5.1.2600]\\n(C) Copyright 1985-2001 Microsoft Corp.\\n\\n'; input.onkeydown = function(e) { if (e.key === 'Enter') { var val = input.value.trim(); output.innerHTML += 'C:\\\\>' + val + '\\n'; var parts = val.split(' '); var cmd = parts[0].toLowerCase(); if (cmd === 'cls') output.innerHTML = ''; else if (cmd === 'dir') output.innerHTML += VFS.ls('C:').join('  ') + '\\n'; else if (cmd === 'echo') output.innerHTML += parts.slice(1).join(' ') + '\\n'; else if (cmd === 'exit') XP_API.closeWindow(winId); else if (cmd !== '') output.innerHTML += \"'\" + cmd + \"' is not recognized.\\n\"; input.value = ''; output.scrollTop = output.scrollHeight; } }; container.onclick = function() { input.focus(); };"
+}
