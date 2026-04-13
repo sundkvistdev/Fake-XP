@@ -1,5 +1,4 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# FakeXP
 
-A Dumpster Fire masquerading as an OS simulation made with AI Studio.
+Virtual Web Operating System designed for lightweight tasks and potential development,
+but mostly intended as a fun project for myself.
