@@ -1105,6 +1105,9 @@ var XP_Apps = (function() {
                 height: 400,
                 content: container
             });
-        }
+        },
+        subsysImport: function() {
+            //TODO: Introduce application to import JS into system as script tag.
+        },
     };
 })();
