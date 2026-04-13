@@ -135,7 +135,8 @@ var XP_API = (function() {
                     width: 400,
                     height: 320,
                     isDialog: true,
-                    content: container
+                    content: container,
+                    fullModal: true,
                 });
                 
                 // Ensure UAC is above overlay
