@@ -49,6 +49,10 @@ var WindowManager = (function() {
         this.isMaximized = false;
         this.onClose = options.onClose;
         this.prevRect = null; // For restoring from maximized
+        /**
+         * @type {boolean}
+         */
+        this.fullModal = options.fullModal;
 
         this.element = this._createUI(options.content);
         this._initEvents();
@@ -137,12 +141,14 @@ var WindowManager = (function() {
             isDragging = true;
             offsetX = e.clientX - self.element.offsetLeft;
             offsetY = e.clientY - self.element.offsetTop;
-            self.focus();
+            if (!self.fullModal)
+                self.focus();
         };
 
-        this.element.onmousedown = function() {
-            self.focus();
-        };
+        if (!self.fullModal)
+            this.element.onmousedown = function() {
+                self.focus();
+            };
 
         document.addEventListener('mousemove', function(e) {
             if (isDragging) {
