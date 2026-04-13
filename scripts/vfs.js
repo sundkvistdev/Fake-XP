@@ -247,6 +247,9 @@ var VFS = (function() {
                 return true;
             }
             return false;
+        },
+        getStorage:function(){
+            return storage;
         }
     };
 })();

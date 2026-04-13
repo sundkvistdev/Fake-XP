@@ -9,7 +9,23 @@ var APP_PRELOAD = {
     'calc.js': 'XP_Apps.calc();',
     'paint.js': 'XP_Apps.paint();',
     'minesweeper.js': 'XP_Apps.minesweeper();',
-    'display.js': 'XP_Apps.displayProperties();'
+    'display.js': 'XP_Apps.displayProperties();',
+    "_debugExport.js": `
+        const data = VFS.getStorage();
+
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json"
+        });
+
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "vfs_out.json";
+        a.click();
+
+        URL.revokeObjectURL(url);
+    `,
 };
 
 function preloadApps() {
