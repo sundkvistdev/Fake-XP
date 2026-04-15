@@ -27,6 +27,7 @@ const renderItems = (path, targetEl) => {
                 if (isDesktop) XP_API.exec('explorer', { initialPath: fullPath });
                 else setPath(fullPath);
             } else {
+                // TODO: Make use of registry and file associations instead of executing directly.
                 XP_API.exec(fullPath);
             }
         };
