@@ -25,10 +25,21 @@ const tree = FCCF.Controls.Tree({
     }
 });
 
+const [getSidebarWidth, setSidebarWidth, subscribeSidebarWidth] = FCCF.useState(150);
+
 const sidebar = FCCF.Controls.Pane({
-    style: { width: '200px', borderRight: '1px solid #ccc', overflow: 'auto', background: 'white' },
+    style: { width: getSidebarWidth() + "px", borderRight: '1px solid #ccc', overflow: 'auto', background: 'white' },
     children: [tree]
 });
+
+
+let prev = 150;
+const splitter = FCCF.Controls.Splitter({
+    vertical: true,
+    onResize: (delta) => {
+        setSidebarWidth(prev => Math.max(100, Math.min(300, prev + delta)));
+    }
+})
 
 const mainArea = FCCF.Controls.Pane({
     style: { flexGrow: 1, padding: '10px', background: 'white', overflow: 'auto' }
