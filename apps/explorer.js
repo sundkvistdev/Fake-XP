@@ -38,9 +38,9 @@ const renderItems = (path, targetEl) => {
                 { text: 'Open', action: () => itemEl.onclick(e) },
                 { text: 'Explore', action: () => { if (stat.type === 'dir') setPath(fullPath); } },
                 { separator: true },
-                { text: 'Cut' },
-                { text: 'Copy' },
-                { separator: true },
+                //{ text: 'Cut' },
+                //{ text: 'Copy' },
+                //{ separator: true },
                 { text: 'Delete', action: () => { 
                     XP_API.showDialog({ 
                         type: 'confirm', 
@@ -124,19 +124,19 @@ if (isDesktop) {
     grid.oncontextmenu = (e) => {
         e.preventDefault();
         XP_API.showContextMenu(e.clientX, e.clientY, [
-            { text: 'View', menu: [{ text: 'Thumbnails' }, { text: 'Tiles' }, { text: 'Icons' }, { text: 'List' }, { text: 'Details' }] },
-            { text: 'Arrange Icons By' },
+            //{ text: 'View', menu: [{ text: 'Thumbnails' }, { text: 'Tiles' }, { text: 'Icons' }, { text: 'List' }, { text: 'Details' }] },
+            //{ text: 'Arrange Icons By' },
             { text: 'Refresh', action: () => renderItems(getPath(), grid) },
             { separator: true },
-            { text: 'Paste' },
-            { text: 'Paste Shortcut' },
-            { separator: true },
+            //{ text: 'Paste' },
+            //{ text: 'Paste Shortcut' },
+            //{ separator: true },
             { text: 'New', menu: [
                 { text: 'Folder', action: () => { VFS.mkdir(`${getPath()}/New Folder`); renderItems(getPath(), grid); } },
                 { text: 'Text Document', action: () => { VFS.writeFile(`${getPath()}/New Text Document.txt`, ''); renderItems(getPath(), grid); } }
             ]},
-            { separator: true },
-            { text: 'Properties' }
+            //{ separator: true },
+            //{ text: 'Properties' }
         ]);
     };
 
