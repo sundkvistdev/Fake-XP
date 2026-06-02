@@ -7,6 +7,76 @@ const FCCF = (() => {
         if (styles) Object.assign(el.style, styles);
     };
 
+    // Helper to unpack nested wrapper objects when rendering children
+    const unpack = (val) => {
+        return (val && typeof val === 'object' && val.el instanceof Node) ? val.el : val;
+    };
+
+    // Proxy helper for returning consistent `{ el, ... }` interfaces
+    const createComponent = (el, extra = {}) => {
+        const obj = {
+            el: el,
+            ...extra
+        };
+
+        return new Proxy(obj, {
+            get(target, prop, receiver) {
+                if (prop in target) {
+                    return target[prop];
+                }
+                const val = el[prop];
+                if (typeof val === 'function') {
+                    return val.bind(el);
+                }
+                return val;
+            },
+            set(target, prop, value, receiver) {
+                if (prop in target) {
+                    target[prop] = value;
+                    return true;
+                }
+                el[prop] = value;
+                return true;
+            }
+        });
+    };
+
+    // Global Node and Element prototypes patching to unpack wrap objects
+    (function() {
+        const origAppendChild = Node.prototype.appendChild;
+        Node.prototype.appendChild = function(child) {
+            return origAppendChild.call(this, unpack(child));
+        };
+
+        const origInsertBefore = Node.prototype.insertBefore;
+        Node.prototype.insertBefore = function(newChild, refChild) {
+            return origInsertBefore.call(this, unpack(newChild), unpack(refChild));
+        };
+
+        const origRemoveChild = Node.prototype.removeChild;
+        Node.prototype.removeChild = function(child) {
+            return origRemoveChild.call(this, unpack(child));
+        };
+
+        const origReplaceChild = Node.prototype.replaceChild;
+        Node.prototype.replaceChild = function(newChild, oldChild) {
+            return origReplaceChild.call(this, unpack(newChild), unpack(oldChild));
+        };
+
+        if (Element.prototype.append) {
+            const origAppend = Element.prototype.append;
+            Element.prototype.append = function(...nodes) {
+                return origAppend.apply(this, nodes.map(unpack));
+            };
+        }
+        if (Element.prototype.prepend) {
+            const origPrepend = Element.prototype.prepend;
+            Element.prototype.prepend = function(...nodes) {
+                return origPrepend.apply(this, nodes.map(unpack));
+            };
+        }
+    })();
+
     return {
         // Hooks-like state management
         useState: (initialValue) => {
@@ -30,8 +100,8 @@ const FCCF = (() => {
                 const el = document.createElement('div');
                 el.className = `fccf-pane ${options.className || ''}`;
                 applyStyles(el, options.style);
-                if (options.children) options.children.forEach(c => el.appendChild(c));
-                return el;
+                if (options.children) options.children.forEach(c => el.appendChild(unpack(c)));
+                return createComponent(el);
             },
 
             // Standard XP Button
@@ -47,13 +117,13 @@ const FCCF = (() => {
                     ]
                 });
                 if (options.disabled) btn.disabled = true;
-                return btn;
+                return createComponent(btn, { onClick: options.onClick });
             },
 
             // Text Input
             Input: (options = {}) => {
                 const input = WindowManager.createElement({
-                    tag: 'input',
+                    tag: options.multiline ? 'textarea' : 'input',
                     className: `fccf-input ${options.className || ''}`,
                     style: options.style,
                     contextMenu: options.contextMenu || [
@@ -62,10 +132,15 @@ const FCCF = (() => {
                         { text: 'Paste', action: () => { document.execCommand('paste'); } }
                     ]
                 });
-                input.type = options.type || 'text';
+                if (!options.multiline) {
+                    input.type = options.type || 'text';
+                }
                 input.value = options.value || '';
                 if (options.onChange) input.oninput = (e) => options.onChange(e.target.value);
-                return input;
+                return createComponent(input, {
+                    getValue: () => input.value,
+                    setValue: (val) => { input.value = val; if (options.onChange) options.onChange(val); }
+                });
             },
 
             // Progress Bar
@@ -81,7 +156,7 @@ const FCCF = (() => {
                 };
                 setProgress(options.value || 0);
                 
-                return { el: container, setProgress };
+                return createComponent(container, { setProgress });
             },
 
             // List View
@@ -98,7 +173,7 @@ const FCCF = (() => {
                         if (typeof item === 'string') {
                             li.innerText = item;
                         } else {
-                            li.appendChild(item);
+                            li.appendChild(unpack(item));
                         }
                         if (options.onItemClick) li.onclick = () => options.onItemClick(item);
                         ul.appendChild(li);
@@ -106,7 +181,7 @@ const FCCF = (() => {
                 };
                 
                 if (options.items) renderItems(options.items);
-                return { el: ul, update: renderItems };
+                return createComponent(ul, { update: renderItems });
             },
 
             // Grid View
@@ -119,8 +194,8 @@ const FCCF = (() => {
                     gap: options.gap || '10px',
                     ...options.style
                 });
-                if (options.children) options.children.forEach(c => el.appendChild(c));
-                return el;
+                if (options.children) options.children.forEach(c => el.appendChild(unpack(c)));
+                return createComponent(el);
             },
 
             // Link component
@@ -139,7 +214,7 @@ const FCCF = (() => {
                     e.preventDefault();
                     options.onClick();
                 };
-                return a;
+                return createComponent(a, { onClick: options.onClick });
             },
 
             // Image component
@@ -151,7 +226,7 @@ const FCCF = (() => {
                 img.referrerPolicy = 'no-referrer';
                 applyStyles(img, options.style);
                 if (options.onClick) img.onclick = options.onClick;
-                return img;
+                return createComponent(img, { onClick: options.onClick });
             },
 
             // Icon component (Image with fixed size)
@@ -181,7 +256,7 @@ const FCCF = (() => {
                     });
                 }
                 if (options.onChange) select.onchange = (e) => options.onChange(e.target.value);
-                return select;
+                return createComponent(select, { onChange: options.onChange });
             },
 
             // Menu (Unified Drop-out and Context menu)
@@ -273,7 +348,7 @@ const FCCF = (() => {
                     }, 10);
                 };
 
-                return { el: menu, show, update: renderItems };
+                return createComponent(menu, { show, update: renderItems });
             },
 
             // Splitter / Resizable Panel
@@ -306,7 +381,7 @@ const FCCF = (() => {
                     document.addEventListener('mouseup', onMouseUp);
                 };
 
-                return splitter;
+                return createComponent(splitter);
             },
 
             // Menu Strip
@@ -320,7 +395,7 @@ const FCCF = (() => {
                     
                     if (item.menu) {
                         const menu = FCCF.Controls.Menu({ items: item.menu });
-                        document.body.appendChild(menu.el);
+                        document.body.appendChild(unpack(menu));
                         btn.onclick = (e) => {
                             const rect = btn.getBoundingClientRect();
                             menu.show(rect.left, rect.bottom);
@@ -330,7 +405,7 @@ const FCCF = (() => {
                     }
                     nav.appendChild(btn);
                 });
-                return nav;
+                return createComponent(nav);
             },
 
             // Tree View (Simplified)
@@ -357,7 +432,7 @@ const FCCF = (() => {
                 };
                 
                 options.data.forEach(n => renderNode(n, container));
-                return container;
+                return createComponent(container);
             },
 
             // Slider
@@ -369,7 +444,7 @@ const FCCF = (() => {
                 input.value = options.value || 0;
                 input.className = 'fccf-slider';
                 if (options.onChange) input.oninput = (e) => options.onChange(e.target.value);
-                return input;
+                return createComponent(input, { onChange: options.onChange });
             },
 
             // Installer / Wizard component
@@ -411,9 +486,9 @@ const FCCF = (() => {
                 }});
                 const cancelBtn = FCCF.Controls.Button({ text: 'Cancel', onClick: options.onCancel });
                 
-                footer.appendChild(backBtn);
-                footer.appendChild(nextBtn);
-                footer.appendChild(cancelBtn);
+                footer.appendChild(unpack(backBtn));
+                footer.appendChild(unpack(nextBtn));
+                footer.appendChild(unpack(cancelBtn));
                 
                 container.appendChild(header);
                 container.appendChild(body);
@@ -426,9 +501,9 @@ const FCCF = (() => {
                     if (typeof step.content === 'string') {
                         body.innerText = step.content;
                     } else if (typeof step.content === 'function') {
-                        body.appendChild(step.content());
+                        body.appendChild(unpack(step.content()));
                     } else {
-                        body.appendChild(step.content);
+                        body.appendChild(unpack(step.content));
                     }
                     
                     backBtn.disabled = stepIdx === 0;
@@ -438,7 +513,7 @@ const FCCF = (() => {
                 subscribeStep(renderStep);
                 renderStep(0);
                 
-                return container;
+                return createComponent(container);
             }
         },
 
@@ -448,8 +523,10 @@ const FCCF = (() => {
                 title: options.title || 'FCCF App',
                 width: options.width || 400,
                 height: options.height || 300,
-                content: options.content,
-                onClose: options.onClose
+                content: (options.content && options.content.el) ? options.content.el : options.content,
+                onClose: options.onClose,
+                resizable: options.resizable,
+                type: options.type
             };
             return XP_API.createWindow(winOptions);
         }
