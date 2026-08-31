@@ -2,6 +2,7 @@ import { IVirtualFileSystem, VFSNode, VFSStat, VFSStream, VFSMetadata } from './
 
 export class VirtualFileSystem implements IVirtualFileSystem {
     private storage: { 'C:': VFSNode };
+    private watchers: Map<string, Set<() => void>> = new Map();
 
     constructor() {
         this.storage = {
@@ -12,23 +13,35 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                         type: 'dir',
                         children: {
                             'My Computer.lnk': { type: 'file', content: JSON.stringify({ app: 'explorer', args: 'C:' }), isLink: true },
+                            'My Documents.lnk': { type: 'file', content: JSON.stringify({ app: 'explorer', args: 'C:/Documents' }), isLink: true },
                             'Notepad.lnk': { type: 'file', content: JSON.stringify({ app: 'notepad', args: '' }), isLink: true },
                             'Command Prompt.lnk': { type: 'file', content: JSON.stringify({ app: 'cmd', args: '' }), isLink: true },
-                            'Secret.txt': { type: 'file', content: 'This is a secret file on your desktop.', metadata: { owner: 'Administrator', permissions: '600' } },
-                            'Virus.exe': { type: 'file', content: 'MALWARE_SIGNATURE: Trojan.Win32.Generic', metadata: { owner: 'User', permissions: '777' } }
+                            'Paint.lnk': { type: 'file', content: JSON.stringify({ app: 'paint', args: '' }), isLink: true },
+                            'Music Player.lnk': { type: 'file', content: JSON.stringify({ app: 'music', args: '' }), isLink: true },
+                            'Minesweeper.lnk': { type: 'file', content: JSON.stringify({ app: 'minesweeper', args: '' }), isLink: true },
+                            'Solitaire.lnk': { type: 'file', content: JSON.stringify({ app: 'solitaire', args: '' }), isLink: true },
+                            'ReadMe.txt': { 
+                                type: 'file', 
+                                content: 'Welcome to Windows XP!\n\nThis system features a full Win32 component framework, virtual filesystem, registry, and application execution environment.\n\nEnjoy the classic experience!',
+                                metadata: { owner: 'Administrator', permissions: '644' } 
+                            },
+                            'Virus.exe': { 
+                                type: 'file', 
+                                content: 'MALWARE_SIGNATURE: Trojan.Win32.Generic', 
+                                metadata: { owner: 'User', permissions: '777' } 
+                            }
                         }
                     },
                     'StartMenu': {
                         type: 'dir',
                         children: {
-                            'Internet Explorer.lnk': { type: 'file', content: JSON.stringify({ app: 'dialog', args: 'Internet Explorer is not available.' }), isLink: true },
                             'Notepad.lnk': { type: 'file', content: JSON.stringify({ app: 'notepad', args: '' }), isLink: true },
                             'Command Prompt.lnk': { type: 'file', content: JSON.stringify({ app: 'cmd', args: '' }), isLink: true },
                             'Calculator.lnk': { type: 'file', content: JSON.stringify({ app: 'calc', args: '' }), isLink: true },
                             'Paint.lnk': { type: 'file', content: JSON.stringify({ app: 'paint', args: '' }), isLink: true },
+                            'Music Player.lnk': { type: 'file', content: JSON.stringify({ app: 'music', args: '' }), isLink: true },
                             'Minesweeper.lnk': { type: 'file', content: JSON.stringify({ app: 'minesweeper', args: '' }), isLink: true },
                             'Solitaire.lnk': { type: 'file', content: JSON.stringify({ app: 'solitaire', args: '' }), isLink: true },
-                            'Music Player.lnk': { type: 'file', content: JSON.stringify({ app: 'music', args: '' }), isLink: true },
                             'Registry Editor.lnk': { type: 'file', content: JSON.stringify({ app: 'regedit', args: '' }), isLink: true },
                             'Control Panel.lnk': { type: 'file', content: JSON.stringify({ app: 'control', args: '' }), isLink: true },
                             'CentralFirm Antivirus.lnk': { type: 'file', content: JSON.stringify({ app: 'antivirus', args: '' }), isLink: true }
@@ -39,7 +52,11 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                         children: {
                             'readme.txt': {
                                 type: 'file',
-                                content: 'Welcome to XP Retro Desktop!\n\nThis is a virtual file system. Your changes are transient and will be lost on refresh.'
+                                content: 'Welcome to Windows XP Documents!\n\nYou can create, edit, save and organize your documents here.\nAll applications integrate directly with this Virtual File System and Registry.'
+                            },
+                            'Todo.txt': {
+                                type: 'file',
+                                content: '1. Explore Control Panel\n2. Set custom wallpaper in Display Properties\n3. Play Minesweeper and Solitaire\n4. Scan files with Antivirus\n5. Draw graphics in Paint'
                             },
                             'virus_test.exe': {
                                 type: 'file',
@@ -50,14 +67,16 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                     'Music': {
                         type: 'dir',
                         children: {
-                            'Track1.mp3': { type: 'file', content: 'MP3_DATA_PLACEHOLDER' },
-                            'Track2.mp3': { type: 'file', content: 'MP3_DATA_PLACEHOLDER' }
+                            'Beethoven Symphony No. 9.mp3': { type: 'file', content: 'AUDIO_STREAM: Beethoven Symphony No. 9 - Ode to Joy (192kbps)' },
+                            'Chopin Nocturne.mp3': { type: 'file', content: 'AUDIO_STREAM: Chopin Nocturne Op. 9 No. 2 (320kbps)' },
+                            'Title Theme.wav': { type: 'file', content: 'AUDIO_STREAM: Windows XP Startup Sound (1411kbps)' }
                         }
                     },
                     'Pictures': {
                         type: 'dir',
                         children: {
-                            'Sample.jpg': { type: 'file', content: 'JPG_DATA_PLACEHOLDER' }
+                            'Bliss.bmp': { type: 'file', content: 'BITMAP_IMAGE: Windows XP Bliss Rolling Green Hills' },
+                            'Red Desert.bmp': { type: 'file', content: 'BITMAP_IMAGE: Windows XP Red Moon Desert Sunset' }
                         }
                     },
                     'Program Files': {
@@ -66,8 +85,29 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                             'CentralFirm': {
                                 type: 'dir',
                                 children: {
-                                    'antivirus.exe': { type: 'file', content: 'CentralFirm Antivirus Executable' },
+                                    'antivirus.exe': { type: 'file', content: 'CentralFirm Antivirus Engine Core Executable' },
                                     'quarantine': { type: 'dir', children: {} }
+                                }
+                            },
+                            'Accessories': {
+                                type: 'dir',
+                                children: {
+                                    'notepad.exe': { type: 'file', content: 'Microsoft Notepad Win32 Executable' },
+                                    'calc.exe': { type: 'file', content: 'Microsoft Calculator Win32 Executable' },
+                                    'mspaint.exe': { type: 'file', content: 'Microsoft Paint Win32 Executable' }
+                                }
+                            }
+                        }
+                    },
+                    'Windows': {
+                        type: 'dir',
+                        children: {
+                            'System32': {
+                                type: 'dir',
+                                children: {
+                                    'cmd.exe': { type: 'file', content: 'Windows Command Processor' },
+                                    'regedit.exe': { type: 'file', content: 'Windows Registry Editor' },
+                                    'taskmgr.exe': { type: 'file', content: 'Windows Task Manager' }
                                 }
                             }
                         }
@@ -79,17 +119,29 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                                 type: 'file',
                                 content: JSON.stringify({
                                     System: {
-                                        Version: '1.0.0',
+                                        Version: '5.1.2600',
                                         Owner: 'Administrator',
                                         Theme: 'Luna',
-                                        Wallpaper: 'https://picsum.photos/seed/xp/1920/1080',
-                                        BootTime: new Date().getTime(),
+                                        Wallpaper: 'https://picsum.photos/seed/bliss/1920/1080',
+                                        BootTime: Date.now(),
                                         ShowClock: true,
                                         TaskbarSize: 30,
                                         DesktopIconSize: 48,
                                         ComputerName: 'XP-RETRO-PC',
                                         RegisteredOrganization: 'Retro Corp',
-                                        InstallDate: '2001-10-25'
+                                        InstallDate: '2001-10-25',
+                                        Associations: {
+                                            'txt': 'notepad',
+                                            'js': 'ADR',
+                                            'ts': 'ADR',
+                                            'lnk': 'shell',
+                                            'bmp': 'paint',
+                                            'png': 'paint',
+                                            'jpg': 'paint',
+                                            'mp3': 'music',
+                                            'wav': 'music',
+                                            'reg': 'regedit'
+                                        }
                                     },
                                     Security: {
                                         Users: {
@@ -116,12 +168,13 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                                         CurrentSession: null
                                     },
                                     Apps: {
-                                        Notepad: { LastFile: '', FontSize: 12, FontColor: '#000000', WordWrap: true },
-                                        Explorer: { ShowHidden: false, ViewMode: 'grid', ConfirmDelete: true },
-                                        Calculator: { Precision: 10 },
-                                        Antivirus: { LastScan: null, AutoProtect: true, DatabaseVersion: '2026.04.12' }
+                                        Notepad: { LastFile: '', FontSize: 12, FontColor: '#000000', WordWrap: true, StatusBar: true },
+                                        Explorer: { ShowHidden: false, ViewMode: 'icons', ConfirmDelete: true },
+                                        Calculator: { Mode: 'standard', Precision: 10 },
+                                        Antivirus: { LastScan: null, AutoProtect: true, DatabaseVersion: '2026.04.12' },
+                                        Paint: { PrimaryColor: '#000000', SecondaryColor: '#ffffff', BrushSize: 2 }
                                     }
-                                })
+                                }, null, 2)
                             },
                             'icache.json': {
                                 type: 'file',
@@ -139,7 +192,7 @@ export class VirtualFileSystem implements IVirtualFileSystem {
     }
 
     private resolvePath(path: string): VFSNode | null {
-        if (!path || path === '' || path === '/') {
+        if (!path || path === '' || path === '/' || path === 'C:' || path === 'C:/') {
             return this.storage['C:'] as VFSNode;
         }
         const parts = path.split('/').filter(p => p.length > 0);
@@ -185,7 +238,7 @@ export class VirtualFileSystem implements IVirtualFileSystem {
         const fileName = parts.pop();
         if (!fileName) return false;
         
-        const dirPath = parts.join('/');
+        const dirPath = parts.join('/') || 'C:';
         const dirNode = this.resolvePath(dirPath);
         
         if (dirNode && dirNode.type === 'dir' && dirNode.children) {
@@ -194,8 +247,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                 type: 'file',
                 content: content,
                 isLink: existing ? existing.isLink : false,
-                metadata: metadata || (existing ? existing.metadata : {})
+                metadata: metadata || (existing ? existing.metadata : { modified: Date.now() })
             };
+            this.notifyWatchers(path);
+            this.notifyWatchers(dirPath);
             return true;
         }
         return false;
@@ -206,7 +261,7 @@ export class VirtualFileSystem implements IVirtualFileSystem {
         const dirName = parts.pop();
         if (!dirName) return false;
         
-        const parentPath = parts.join('/');
+        const parentPath = parts.join('/') || 'C:';
         const parentNode = this.resolvePath(parentPath);
         
         if (parentNode && parentNode.type === 'dir' && parentNode.children) {
@@ -214,9 +269,15 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                 type: 'dir',
                 children: {}
             };
+            this.notifyWatchers(path);
+            this.notifyWatchers(parentPath);
             return true;
         }
         return false;
+    }
+
+    public exists(path: string): boolean {
+        return this.resolvePath(path) !== null;
     }
 
     public walk(path: string, callback: (path: string, node: VFSNode) => void): void {
@@ -239,12 +300,14 @@ export class VirtualFileSystem implements IVirtualFileSystem {
         const oldName = parts.pop();
         if (!oldName) return false;
         
-        const dirPath = parts.join('/');
+        const dirPath = parts.join('/') || 'C:';
         const dirNode = this.resolvePath(dirPath);
         
         if (dirNode && dirNode.type === 'dir' && dirNode.children && dirNode.children[oldName]) {
             dirNode.children[newName] = dirNode.children[oldName];
             delete dirNode.children[oldName];
+            this.notifyWatchers(oldPath);
+            this.notifyWatchers(dirPath);
             return true;
         }
         return false;
@@ -255,7 +318,7 @@ export class VirtualFileSystem implements IVirtualFileSystem {
         const fileName = parts.pop();
         if (!fileName) return false;
         
-        const oldDirPath = parts.join('/');
+        const oldDirPath = parts.join('/') || 'C:';
         
         const oldDirNode = this.resolvePath(oldDirPath);
         const newDirNode = this.resolvePath(newDirPath);
@@ -263,6 +326,9 @@ export class VirtualFileSystem implements IVirtualFileSystem {
         if (oldDirNode && newDirNode && oldDirNode.type === 'dir' && newDirNode.type === 'dir' && oldDirNode.children && newDirNode.children && oldDirNode.children[fileName]) {
             newDirNode.children[fileName] = oldDirNode.children[fileName];
             delete oldDirNode.children[fileName];
+            this.notifyWatchers(oldPath);
+            this.notifyWatchers(oldDirPath);
+            this.notifyWatchers(newDirPath);
             return true;
         }
         return false;
@@ -273,13 +339,37 @@ export class VirtualFileSystem implements IVirtualFileSystem {
         const name = parts.pop();
         if (!name) return false;
         
-        const dirPath = parts.join('/');
+        const dirPath = parts.join('/') || 'C:';
         const dirNode = this.resolvePath(dirPath);
         if (dirNode && dirNode.type === 'dir' && dirNode.children && dirNode.children[name]) {
             delete dirNode.children[name];
+            this.notifyWatchers(path);
+            this.notifyWatchers(dirPath);
             return true;
         }
         return false;
+    }
+
+    public watch(path: string, callback: () => void): () => void {
+        if (!this.watchers.has(path)) {
+            this.watchers.set(path, new Set());
+        }
+        const set = this.watchers.get(path)!;
+        set.add(callback);
+
+        return () => {
+            set.delete(callback);
+            if (set.size === 0) {
+                this.watchers.delete(path);
+            }
+        };
+    }
+
+    private notifyWatchers(path: string): void {
+        const direct = this.watchers.get(path);
+        if (direct) {
+            direct.forEach(cb => cb());
+        }
     }
 
     public createReadStream(path: string): VFSStream | null {

@@ -1,5 +1,8 @@
 {
   "name": "XP Retro Desktop",
   "description": "A realistic Windows XP desktop environment built with vanilla ES5 JavaScript and custom CSS, featuring a virtual file system and window management API.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

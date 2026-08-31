@@ -1,4 +1,15 @@
-import { IFCCF, FCCFComponent, PaneOptions, ButtonOptions, InputOptions, ProgressBarOptions, ListOptions, GridOptions, LinkOptions, ImageOptions, DropdownOptions, MenuOptions, SplitterOptions, MenuStripOptions, TreeOptions, SliderOptions, InstallerOptions, Step, MenuItem, IKernel, TreeNode, WindowOptions } from './types';
+import { 
+    IFCCF, FCCFComponent, PaneOptions, ButtonOptions, InputOptions, ProgressBarOptions, 
+    ListOptions, GridOptions, LinkOptions, ImageOptions, DropdownOptions, MenuOptions, 
+    SplitterOptions, MenuStripOptions, TreeOptions, SliderOptions, InstallerOptions, 
+    StatusBarOptions, ToolbarOptions, TabControlOptions, ListViewOptions, GroupBoxOptions, 
+    MenuItem, IKernel, TreeNode, WindowOptions, PaneComponent, ButtonComponent, 
+    InputComponent, ProgressBarComponent, ListComponent, GridComponent, LinkComponent, 
+    ImageComponent, DropdownComponent, MenuComponent, SplitterComponent, MenuStripComponent, 
+    TreeComponent, SliderComponent, InstallerComponent, StatusBarComponent, ToolbarComponent, 
+    TabControlComponent, ListViewComponent, GroupBoxComponent, DropdownItem, ListViewColumn,
+    ToolbarItem, TabItem, StatusBarPanel
+} from './types';
 
 export class CentralComponentFramework implements IFCCF {
     private readonly kernel: IKernel;
@@ -14,6 +25,9 @@ export class CentralComponentFramework implements IFCCF {
             const el = (val as { el: unknown }).el;
             if (el instanceof Node) return el;
         }
+        if (typeof val === 'string') {
+            return document.createTextNode(val);
+        }
         return val as Node;
     }
 
@@ -23,7 +37,7 @@ export class CentralComponentFramework implements IFCCF {
         }
     }
 
-    private createComponent<T extends HTMLElement>(el: T, extra: Record<string, unknown> = {}): FCCFComponent<T> {
+    private createComponent<T extends HTMLElement, P = Record<string, unknown>>(el: T, extra: P = {} as P): FCCFComponent<T, P> {
         const obj = {
             el: el,
             ...extra
@@ -50,12 +64,11 @@ export class CentralComponentFramework implements IFCCF {
             }
         });
 
-        return proxy as unknown as FCCFComponent<T>;
+        return proxy as unknown as FCCFComponent<T, P>;
     }
 
     private patchNodePrototypes(): void {
         const self = this;
-        // Check if already patched to avoid recursion
         if ((Node.prototype as unknown as { __fccfPatched?: boolean }).__fccfPatched) return;
         (Node.prototype as unknown as { __fccfPatched?: boolean }).__fccfPatched = true;
 
@@ -110,7 +123,7 @@ export class CentralComponentFramework implements IFCCF {
     }
 
     public Controls = {
-        Pane: (options: PaneOptions = {}): FCCFComponent => {
+        Pane: (options: PaneOptions = {}): PaneComponent => {
             const el = document.createElement('div');
             el.className = `fccf-pane ${options.className || ''}`;
             this.applyStyles(el, options.style);
@@ -120,10 +133,10 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(el);
         },
 
-        Button: (options: ButtonOptions = {}): FCCFComponent<HTMLButtonElement> => {
+        Button: (options: ButtonOptions = {}): ButtonComponent => {
             const btn = this.kernel.WindowManager.createElement({
                 tag: 'button',
-                className: `xp-button ${options.className || ''}`,
+                className: `xp-button ${options.default ? 'xp-btn-default' : ''} ${options.className || ''}`,
                 innerText: options.text || '',
                 style: options.style,
                 onclick: options.onClick,
@@ -132,10 +145,23 @@ export class CentralComponentFramework implements IFCCF {
                 ]
             }) as HTMLButtonElement;
             if (options.disabled) btn.disabled = true;
-            return this.createComponent(btn, { onClick: options.onClick });
+
+            const setDisabled = (disabled: boolean) => {
+                btn.disabled = disabled;
+            };
+
+            const setText = (text: string) => {
+                btn.innerText = text;
+            };
+
+            return this.createComponent(btn, { 
+                onClick: options.onClick,
+                setDisabled,
+                setText
+            });
         },
 
-        Input: (options: InputOptions = {}): FCCFComponent<HTMLInputElement | HTMLTextAreaElement> => {
+        Input: (options: InputOptions = {}): InputComponent => {
             const input = this.kernel.WindowManager.createElement({
                 tag: options.multiline ? 'textarea' : 'input',
                 className: `fccf-input ${options.className || ''}`,
@@ -143,13 +169,19 @@ export class CentralComponentFramework implements IFCCF {
                 contextMenu: options.contextMenu || [
                     { text: 'Cut', action: () => { document.execCommand('cut'); } },
                     { text: 'Copy', action: () => { document.execCommand('copy'); } },
-                    { text: 'Paste', action: () => { document.execCommand('paste'); } }
+                    { text: 'Paste', action: () => { document.execCommand('paste'); } },
+                    { separator: true },
+                    { text: 'Select All', action: () => { (input as HTMLInputElement).select(); } }
                 ]
             }) as HTMLInputElement | HTMLTextAreaElement;
+            
             if (!options.multiline) {
                 (input as HTMLInputElement).type = options.type || 'text';
             }
             input.value = options.value || '';
+            if (options.placeholder) input.placeholder = options.placeholder;
+            if (options.readOnly) input.readOnly = true;
+
             if (options.onChange) {
                 input.oninput = (e: Event) => options.onChange!((e.target as HTMLInputElement | HTMLTextAreaElement).value);
             }
@@ -162,7 +194,7 @@ export class CentralComponentFramework implements IFCCF {
             });
         },
 
-        ProgressBar: (options: ProgressBarOptions = {}): FCCFComponent => {
+        ProgressBar: (options: ProgressBarOptions = {}): ProgressBarComponent => {
             const container = document.createElement('div');
             container.className = 'fccf-progress-container';
             const bar = document.createElement('div');
@@ -177,23 +209,31 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(container, { setProgress });
         },
 
-        List: (options: ListOptions = {}): FCCFComponent<HTMLUListElement> => {
+        List: <T = unknown>(options: ListOptions<T> = {}): ListComponent<T> => {
             const ul = document.createElement('ul');
             ul.className = `fccf-list ${options.className || ''}`;
             this.applyStyles(ul, options.style);
             
-            const renderItems = (items: (string | HTMLElement | FCCFComponent)[]) => {
+            const renderItems = (items: (string | HTMLElement | FCCFComponent | T)[]) => {
                 ul.innerHTML = '';
                 items.forEach(item => {
                     const li = document.createElement('li');
                     li.className = 'fccf-list-item';
                     if (typeof item === 'string') {
                         li.innerText = item;
-                    } else {
+                    } else if (item && typeof item === 'object' && 'el' in item) {
                         li.appendChild(this.unpack(item));
+                    } else if (item instanceof Node) {
+                        li.appendChild(item);
+                    } else {
+                        li.innerText = String(item);
                     }
                     if (options.onItemClick) {
-                        li.onclick = () => options.onItemClick!(item);
+                        li.onclick = () => {
+                            ul.querySelectorAll('.fccf-list-item').forEach(el => el.classList.remove('selected'));
+                            li.classList.add('selected');
+                            options.onItemClick!(item as T, li);
+                        };
                     }
                     ul.appendChild(li);
                 });
@@ -203,13 +243,13 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(ul, { update: renderItems });
         },
 
-        Grid: (options: GridOptions = {}): FCCFComponent => {
+        Grid: (options: GridOptions = {}): GridComponent => {
             const el = document.createElement('div');
             el.className = `fccf-grid ${options.className || ''}`;
             this.applyStyles(el, {
                 display: 'grid',
                 gridTemplateColumns: `repeat(${options.cols || 3}, 1fr)`,
-                gap: options.gap || '10px',
+                gap: options.gap || '0.625rem',
                 ...options.style
             });
             if (options.children) {
@@ -218,7 +258,7 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(el);
         },
 
-        Link: (options: LinkOptions = {}): FCCFComponent<HTMLAnchorElement> => {
+        Link: (options: LinkOptions = {}): LinkComponent => {
             const a = document.createElement('a');
             a.className = `fccf-link ${options.className || ''}`;
             a.href = options.href || 'javascript:void(0)';
@@ -238,7 +278,7 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(a, { onClick: options.onClick });
         },
 
-        Image: (options: ImageOptions = {}): FCCFComponent<HTMLImageElement> => {
+        Image: (options: ImageOptions = {}): ImageComponent => {
             const img = document.createElement('img');
             img.className = `fccf-image ${options.className || ''}`;
             img.src = options.src || '';
@@ -249,18 +289,18 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(img, { onClick: options.onClick });
         },
 
-        Icon: (options: ImageOptions & { size?: string } = {}): FCCFComponent<HTMLImageElement> => {
+        Icon: (options: ImageOptions & { size?: string } = {}): ImageComponent => {
             return this.Controls.Image({
                 ...options,
                 style: {
-                    width: options.size || '32px',
-                    height: options.size || '32px',
+                    width: options.size || '2rem',
+                    height: options.size || '2rem',
                     ...options.style
                 }
             });
         },
 
-        Dropdown: (options: DropdownOptions = {}): FCCFComponent<HTMLSelectElement> => {
+        Dropdown: <T = string>(options: DropdownOptions<T> = {}): DropdownComponent<T> => {
             const select = document.createElement('select');
             select.className = `fccf-dropdown ${options.className || ''}`;
             this.applyStyles(select, options.style);
@@ -270,31 +310,39 @@ export class CentralComponentFramework implements IFCCF {
                     if (typeof item === 'string') {
                         opt.value = item;
                         opt.innerText = item;
-                        if (options.value === item) opt.selected = true;
+                        if (String(options.value) === item) opt.selected = true;
                     } else {
-                        opt.value = item.value;
-                        opt.innerText = item.text;
-                        if (item.selected || options.value === item.value) opt.selected = true;
+                        const dropItem = item as DropdownItem<T>;
+                        opt.value = String(dropItem.value);
+                        opt.innerText = dropItem.text;
+                        if (dropItem.selected || options.value === dropItem.value) opt.selected = true;
                     }
                     select.appendChild(opt);
                 });
             }
             if (options.onChange) {
-                select.onchange = (e: Event) => options.onChange!((e.target as HTMLSelectElement).value);
+                select.onchange = () => options.onChange!(select.value as unknown as T);
             }
-            return this.createComponent(select, { onChange: options.onChange });
+            return this.createComponent(select, { 
+                getValue: () => select.value as unknown as T,
+                setValue: (val: T) => {
+                    select.value = String(val);
+                    if (options.onChange) options.onChange(val);
+                },
+                onChange: options.onChange
+            });
         },
 
-        Menu: (options: MenuOptions = {}): FCCFComponent => {
+        Menu: (options: MenuOptions = {}): MenuComponent => {
             const menu = document.createElement('div');
             menu.className = 'fccf-menu';
             this.applyStyles(menu, {
                 position: 'fixed',
-                background: '#fff',
+                background: '#ffffff',
                 border: '1px solid #aca899',
                 boxShadow: '2px 2px 3px rgba(0,0,0,0.3)',
                 zIndex: '20000',
-                minWidth: '150px',
+                minWidth: '9.375rem',
                 display: 'none',
                 ...options.style
             });
@@ -309,11 +357,13 @@ export class CentralComponentFramework implements IFCCF {
                         return;
                     }
                     const el = document.createElement('div');
-                    el.className = 'fccf-menu-item-dropdown';
+                    el.className = `fccf-menu-item-dropdown ${item.disabled ? 'disabled' : ''}`;
                     
                     const icon = document.createElement('div');
                     icon.className = 'fccf-menu-item-icon';
-                    if (item.icon) {
+                    if (item.checked) {
+                        icon.innerText = '✓';
+                    } else if (item.icon) {
                         const img = document.createElement('img');
                         img.src = item.icon;
                         img.referrerPolicy = 'no-referrer';
@@ -327,20 +377,30 @@ export class CentralComponentFramework implements IFCCF {
                     el.appendChild(icon);
                     el.appendChild(text);
 
+                    if (item.shortcut) {
+                        const sc = document.createElement('span');
+                        sc.innerText = item.shortcut;
+                        sc.className = 'fccf-menu-item-shortcut';
+                        el.appendChild(sc);
+                    }
+
                     if (item.menu) {
                         const arrow = document.createElement('span');
                         arrow.innerText = '▶';
-                        arrow.style.fontSize = '8px';
+                        arrow.style.fontSize = '0.5rem';
+                        arrow.style.marginLeft = 'auto';
                         el.appendChild(arrow);
                     }
 
-                    const actionToRun = item.onClick || item.action;
-                    if (actionToRun) {
-                        el.onclick = (e) => {
-                            e.stopPropagation();
-                            actionToRun();
-                            menu.style.display = 'none';
-                        };
+                    if (!item.disabled) {
+                        const actionToRun = item.onClick || item.action;
+                        if (actionToRun) {
+                            el.onclick = (e) => {
+                                e.stopPropagation();
+                                actionToRun();
+                                menu.style.display = 'none';
+                            };
+                        }
                     }
                     
                     menu.appendChild(el);
@@ -372,7 +432,7 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(menu, { show, update: renderItems });
         },
 
-        Splitter: (options: SplitterOptions = {}): FCCFComponent => {
+        Splitter: (options: SplitterOptions = {}): SplitterComponent => {
             const splitter = document.createElement('div');
             splitter.className = `fccf-splitter ${options.vertical ? 'vertical' : 'horizontal'}`;
             const isVertical = !!options.vertical;
@@ -380,7 +440,7 @@ export class CentralComponentFramework implements IFCCF {
             this.applyStyles(splitter, {
                 background: '#aca899',
                 cursor: isVertical ? 'col-resize' : 'row-resize',
-                [isVertical ? 'width' : 'height']: '4px',
+                [isVertical ? 'width' : 'height']: '0.25rem',
                 ...options.style
             });
 
@@ -404,7 +464,7 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(splitter);
         },
 
-        MenuStrip: (options: MenuStripOptions): FCCFComponent => {
+        MenuStrip: (options: MenuStripOptions): MenuStripComponent => {
             const nav = document.createElement('div');
             nav.className = 'fccf-menustrip';
             options.items.forEach(item => {
@@ -416,6 +476,7 @@ export class CentralComponentFramework implements IFCCF {
                     const menu = this.Controls.Menu({ items: item.menu });
                     document.body.appendChild(this.unpack(menu));
                     btn.onclick = (e) => {
+                        e.stopPropagation();
                         const rect = btn.getBoundingClientRect();
                         (menu as unknown as { show: (x: number, y: number) => void }).show(rect.left, rect.bottom);
                     };
@@ -427,21 +488,33 @@ export class CentralComponentFramework implements IFCCF {
             return this.createComponent(nav);
         },
 
-        Tree: (options: TreeOptions): FCCFComponent => {
+        Tree: <T = TreeNode>(options: TreeOptions<T>): TreeComponent => {
             const container = document.createElement('div');
             container.className = 'fccf-tree';
             
             const renderNode = (node: TreeNode, parent: HTMLElement) => {
                 const item = document.createElement('div');
                 item.className = 'fccf-tree-node';
-                item.innerText = node.text;
+                if (node.icon) {
+                    const icon = document.createElement('img');
+                    icon.src = node.icon;
+                    icon.style.width = '1rem';
+                    icon.style.height = '1rem';
+                    item.appendChild(icon);
+                }
+                const label = document.createElement('span');
+                label.innerText = node.text;
+                item.appendChild(label);
+
                 item.onclick = (e) => {
                     e.stopPropagation();
-                    if (options.onNodeClick) options.onNodeClick(node);
+                    container.querySelectorAll('.fccf-tree-node').forEach(el => el.classList.remove('selected'));
+                    item.classList.add('selected');
+                    if (options.onNodeClick) options.onNodeClick(node as unknown as T);
                 };
                 parent.appendChild(item);
                 
-                if (node.children) {
+                if (node.children && node.children.length > 0) {
                     const sub = document.createElement('div');
                     sub.className = 'fccf-tree-sub';
                     node.children.forEach((child: TreeNode) => renderNode(child, sub));
@@ -449,11 +522,11 @@ export class CentralComponentFramework implements IFCCF {
                 }
             };
             
-            options.data.forEach(n => renderNode(n, container));
+            (options.data as unknown as TreeNode[]).forEach(n => renderNode(n, container));
             return this.createComponent(container);
         },
 
-        Slider: (options: SliderOptions = {}): FCCFComponent<HTMLInputElement> => {
+        Slider: (options: SliderOptions = {}): SliderComponent => {
             const input = document.createElement('input');
             input.type = 'range';
             input.min = String(options.min || 0);
@@ -463,10 +536,14 @@ export class CentralComponentFramework implements IFCCF {
             if (options.onChange) {
                 input.oninput = (e: Event) => options.onChange!((e.target as HTMLInputElement).value);
             }
-            return this.createComponent(input, { onChange: options.onChange });
+            return this.createComponent(input, { 
+                getValue: () => Number(input.value),
+                setValue: (val: number) => { input.value = String(val); },
+                onChange: options.onChange 
+            });
         },
 
-        Installer: (options: InstallerOptions): FCCFComponent => {
+        Installer: (options: InstallerOptions): InstallerComponent => {
             const [getStep, setStep, subscribeStep] = this.useState(0);
             const steps = options.steps || [];
             
@@ -476,32 +553,31 @@ export class CentralComponentFramework implements IFCCF {
             container.style.height = '100%';
             
             const header = document.createElement('div');
-            header.style.padding = '15px';
-            header.style.background = 'white';
-            header.style.borderBottom = '1px solid #ccc';
+            header.style.padding = '0.9375rem';
+            header.style.background = '#ffffff';
+            header.style.borderBottom = '1px solid #aca899';
             header.style.fontWeight = 'bold';
             
             const body = document.createElement('div');
             body.style.flexGrow = '1';
-            body.style.padding = '20px';
+            body.style.padding = '1.25rem';
             body.style.overflow = 'auto';
             
             const footer = document.createElement('div');
-            footer.style.padding = '10px';
-            footer.style.background = '#f0f0f0';
-            footer.style.borderTop = '1px solid #ccc';
-            footer.style.display = 'flex';
-            footer.style.justifyContent = 'flex-end';
-            footer.style.gap = '10px';
+            footer.className = 'xp-dialog-actions';
             
             const backBtn = this.Controls.Button({ text: '< Back', onClick: () => setStep(s => Math.max(0, s - 1)) });
-            const nextBtn = this.Controls.Button({ text: 'Next >', onClick: () => {
-                if (getStep() === steps.length - 1) {
-                    if (options.onFinish) options.onFinish();
-                } else {
-                    setStep(s => s + 1);
+            const nextBtn = this.Controls.Button({ 
+                text: 'Next >', 
+                default: true,
+                onClick: () => {
+                    if (getStep() === steps.length - 1) {
+                        if (options.onFinish) options.onFinish();
+                    } else {
+                        setStep(s => s + 1);
+                    }
                 }
-            }});
+            });
             const cancelBtn = this.Controls.Button({ text: 'Cancel', onClick: options.onCancel });
             
             footer.appendChild(this.unpack(backBtn));
@@ -532,6 +608,253 @@ export class CentralComponentFramework implements IFCCF {
             renderStep(0);
             
             return this.createComponent(container);
+        },
+
+        StatusBar: (options: StatusBarOptions = { panels: [] }): StatusBarComponent => {
+            const bar = document.createElement('div');
+            bar.className = 'xp-statusbar';
+            const panelsMap: Map<string | number, HTMLElement> = new Map();
+
+            options.panels.forEach((p: StatusBarPanel, idx: number) => {
+                const panel = document.createElement('div');
+                panel.className = `xp-statuspanel ${p.flexGrow ? 'flex-grow' : ''}`;
+                if (p.width) panel.style.width = p.width;
+                if (p.icon) {
+                    const icon = document.createElement('img');
+                    icon.src = p.icon;
+                    icon.className = 'xp-status-icon';
+                    panel.appendChild(icon);
+                }
+                const span = document.createElement('span');
+                span.innerText = p.text || '';
+                panel.appendChild(span);
+
+                bar.appendChild(panel);
+                panelsMap.set(idx, span);
+                if (p.id) panelsMap.set(p.id, span);
+            });
+
+            const setPanelText = (indexOrId: number | string, text: string) => {
+                const el = panelsMap.get(indexOrId);
+                if (el) el.innerText = text;
+            };
+
+            const getPanelText = (indexOrId: number | string): string => {
+                const el = panelsMap.get(indexOrId);
+                return el ? el.innerText : '';
+            };
+
+            return this.createComponent(bar, { setPanelText, getPanelText });
+        },
+
+        Toolbar: (options: ToolbarOptions = { items: [] }): ToolbarComponent => {
+            const toolbar = document.createElement('div');
+            toolbar.className = 'xp-toolbar';
+            const itemsMap: Map<string | number, HTMLButtonElement> = new Map();
+
+            options.items.forEach((item: ToolbarItem, idx: number) => {
+                if (item.separator) {
+                    const sep = document.createElement('div');
+                    sep.className = 'xp-tool-separator';
+                    toolbar.appendChild(sep);
+                    return;
+                }
+
+                const btn = document.createElement('button');
+                btn.className = `xp-toolbtn ${item.active ? 'active' : ''}`;
+                if (item.disabled) btn.disabled = true;
+                if (item.tooltip) {
+                    btn.title = item.tooltip;
+                }
+
+                if (item.icon) {
+                    const icon = document.createElement('img');
+                    icon.src = item.icon;
+                    icon.referrerPolicy = 'no-referrer';
+                    btn.appendChild(icon);
+                }
+                if (item.text) {
+                    const span = document.createElement('span');
+                    span.innerText = item.text;
+                    btn.appendChild(span);
+                }
+
+                if (item.onClick) {
+                    btn.onclick = item.onClick;
+                }
+
+                toolbar.appendChild(btn);
+                itemsMap.set(idx, btn);
+                if (item.id) itemsMap.set(item.id, btn);
+            });
+
+            const setItemDisabled = (indexOrId: number | string, disabled: boolean) => {
+                const btn = itemsMap.get(indexOrId);
+                if (btn) btn.disabled = disabled;
+            };
+
+            const setItemActive = (indexOrId: number | string, active: boolean) => {
+                const btn = itemsMap.get(indexOrId);
+                if (btn) {
+                    if (active) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                }
+            };
+
+            return this.createComponent(toolbar, { setItemDisabled, setItemActive });
+        },
+
+        TabControl: (options: TabControlOptions = { tabs: [] }): TabControlComponent => {
+            const container = document.createElement('div');
+            container.className = 'xp-tabcontrol';
+
+            const header = document.createElement('div');
+            header.className = 'xp-tab-header';
+
+            const body = document.createElement('div');
+            body.className = 'xp-tab-body';
+
+            container.appendChild(header);
+            container.appendChild(body);
+
+            let activeId = options.activeTabId || (options.tabs[0]?.id || '');
+            const tabButtons: Map<string, HTMLElement> = new Map();
+            const tabContents: Map<string, HTMLElement> = new Map();
+
+            const render = () => {
+                header.innerHTML = '';
+                body.innerHTML = '';
+
+                options.tabs.forEach(tab => {
+                    const btn = document.createElement('button');
+                    btn.className = `xp-tab-btn ${tab.id === activeId ? 'active' : ''}`;
+                    btn.innerText = tab.title;
+                    btn.onclick = () => {
+                        setActiveTab(tab.id);
+                    };
+                    header.appendChild(btn);
+                    tabButtons.set(tab.id, btn);
+
+                    const contentWrap = document.createElement('div');
+                    contentWrap.style.display = tab.id === activeId ? 'block' : 'none';
+                    contentWrap.style.height = '100%';
+                    contentWrap.appendChild(this.unpack(tab.content));
+                    body.appendChild(contentWrap);
+                    tabContents.set(tab.id, contentWrap);
+                });
+            };
+
+            const setActiveTab = (id: string) => {
+                activeId = id;
+                tabButtons.forEach((btn, tId) => {
+                    if (tId === id) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+                tabContents.forEach((wrap, tId) => {
+                    wrap.style.display = tId === id ? 'block' : 'none';
+                });
+                if (options.onTabChange) options.onTabChange(id);
+            };
+
+            const getActiveTab = () => activeId;
+
+            render();
+            return this.createComponent(container, { setActiveTab, getActiveTab });
+        },
+
+        ListView: <T = Record<string, unknown>>(options: ListViewOptions<T>): ListViewComponent<T> => {
+            const container = document.createElement('div');
+            container.style.overflow = 'auto';
+            container.style.height = '100%';
+            container.style.background = '#ffffff';
+
+            const table = document.createElement('table');
+            table.className = 'xp-listview';
+
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            options.columns.forEach((col: ListViewColumn) => {
+                const th = document.createElement('th');
+                th.innerText = col.name;
+                if (col.width) th.style.width = col.width;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            table.appendChild(tbody);
+            container.appendChild(table);
+
+            let currentItems: T[] = options.items || [];
+            let selectedRows: Set<T> = new Set();
+
+            const renderRows = (items: T[]) => {
+                tbody.innerHTML = '';
+                selectedRows.clear();
+                items.forEach(item => {
+                    const tr = document.createElement('tr');
+                    options.columns.forEach(col => {
+                        const td = document.createElement('td');
+                        const val = (item as Record<string, unknown>)[col.id];
+                        if (val instanceof Node) {
+                            td.appendChild(val);
+                        } else {
+                            td.innerText = val !== undefined ? String(val) : '';
+                        }
+                        tr.appendChild(td);
+                    });
+
+                    tr.onclick = () => {
+                        tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+                        tr.classList.add('selected');
+                        selectedRows.clear();
+                        selectedRows.add(item);
+                        if (options.onItemClick) options.onItemClick(item);
+                    };
+
+                    tr.ondblclick = () => {
+                        if (options.onItemDoubleClick) options.onItemDoubleClick(item);
+                    };
+
+                    if (options.onContextMenu) {
+                        tr.oncontextmenu = (e) => {
+                            e.preventDefault();
+                            options.onContextMenu!(item, e);
+                        };
+                    }
+
+                    tbody.appendChild(tr);
+                });
+            };
+
+            const setItems = (items: T[]) => {
+                currentItems = items;
+                renderRows(items);
+            };
+
+            const getSelectedItems = (): T[] => Array.from(selectedRows);
+
+            if (options.items) renderRows(options.items);
+
+            return this.createComponent(container, { setItems, getSelectedItems });
+        },
+
+        GroupBox: (options: GroupBoxOptions): GroupBoxComponent => {
+            const box = document.createElement('fieldset');
+            box.className = 'xp-groupbox';
+            this.applyStyles(box, options.style);
+
+            const legend = document.createElement('legend');
+            legend.className = 'xp-legend';
+            legend.innerText = options.title;
+            box.appendChild(legend);
+
+            if (options.children) {
+                options.children.forEach(c => box.appendChild(this.unpack(c)));
+            }
+
+            return this.createComponent(box);
         }
     };
 
@@ -545,7 +868,8 @@ export class CentralComponentFramework implements IFCCF {
                 : options.content,
             onClose: options.onClose,
             resizable: options.resizable,
-            type: options.type
+            type: options.type,
+            icon: options.icon
         };
         return this.kernel.WindowManager.createWindow(winOptions);
     }

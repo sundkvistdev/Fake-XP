@@ -1,104 +1,131 @@
 /* Windows XP Start Menu Styles */
+:root {
+    --xp-ui-font-size: 0.8125rem;
+    --xp-ui-font-size-title: 0.875rem;
+}
+
 #start-menu {
     position: absolute;
-    /* DO NOT INTRODUCE FIXED PIXEL SIZING !!!*/
-    bottom: 30px;
+    bottom: 2.125rem;
     left: 0;
+    width: 25rem;
     background: #4282d6;
     border: 1px solid #00309c;
-    border-top-left-radius: 5px;
-    border-top-right-radius: 5px;
+    border-top-left-radius: 0.375rem;
+    border-top-right-radius: 0.375rem;
     display: none;
     flex-direction: column;
     z-index: 10000;
-    box-shadow: 2px -2px 10px rgba(0, 0, 0, 0.5);
-}
+    box-shadow: 2px -2px 14px rgba(0, 0, 0, 0.45);
+    font-size: var(--xp-ui-font-size);
 
-#start-menu.open {
-    display: flex;
-}
+    &.open {
+        display: flex;
+    }
 
-#start-header {
-    height: 60px;
-    background: linear-gradient(to bottom, #0058e6 0%, #3f8cf3 100%);
-    display: flex;
-    align-items: center;
-    padding: 0 10px;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-}
+    > #start-header {
+        height: 4.25rem;
+        background: linear-gradient(to bottom, #0058e6 0%, #3f8cf3 100%);
+        display: flex;
+        align-items: center;
+        padding: 0 0.875rem;
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 1.0625rem;
+        text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
 
-#start-header img {
-    width: 40px;
-    height: 40px;
-    border: 2px solid white;
-    border-radius: 4px;
-    margin-right: 10px;
-}
+        > img {
+            width: 2.75rem;
+            height: 2.75rem;
+            border: 2px solid #ffffff;
+            border-radius: 0.25rem;
+            margin-right: 0.75rem;
+            object-fit: cover;
+        }
 
-#start-body {
-    flex-grow: 1;
-    display: flex;
-    background: white;
-    margin: 0 2px;
-}
+        > span {
+            font-size: 1.0625rem;
+            letter-spacing: 0.02em;
+        }
+    }
 
-#start-left {
-    flex: 1;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-}
+    > #start-body {
+        flex-grow: 1;
+        display: flex;
+        background: #ffffff;
+        margin: 0 0.125rem;
+        min-height: 18rem;
 
-#start-right {
-    width: 150px;
-    background: #d3e5fa;
-    border-left: 1px solid #95b7e8;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+        > #start-left {
+            flex: 1;
+            padding: 0.625rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.375rem;
+        }
+
+        > #start-right {
+            width: 11rem;
+            background: #d3e5fa;
+            border-left: 1px solid #95b7e8;
+            padding: 0.625rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+
+            > hr {
+                border: none;
+                border-top: 1px solid #95b7e8;
+                border-bottom: 1px solid #ffffff;
+                margin: 0.25rem 0;
+            }
+        }
+    }
+
+    > #start-footer {
+        height: 2.875rem;
+        background: linear-gradient(to bottom, #4282d6 0%, #0058e6 100%);
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 0 0.875rem;
+        gap: 1rem;
+
+        > .footer-btn {
+            display: flex;
+            align-items: center;
+            color: #ffffff;
+            cursor: pointer;
+            font-size: var(--xp-ui-font-size);
+            gap: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.1875rem;
+
+            &:hover {
+                background: rgba(255, 255, 255, 0.2);
+            }
+        }
+    }
 }
 
 .start-item {
     display: flex;
     align-items: center;
-    padding: 5px;
+    padding: 0.375rem 0.5rem;
     cursor: pointer;
-    border-radius: 3px;
-}
+    border-radius: 0.1875rem;
+    font-size: var(--xp-ui-font-size);
+    gap: 0.5rem;
+    color: #000000;
 
-.start-item:hover {
-    background: #316ac5;
-    color: white;
-}
+    &:hover {
+        background: #316ac5;
+        color: #ffffff;
+    }
 
-.start-item img {
-    width: 24px;
-    height: 24px;
-    margin-right: 10px;
-}
-
-#start-footer {
-    height: 40px;
-    background: linear-gradient(to bottom, #4282d6 0%, #0058e6 100%);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 10px;
-    gap: 10px;
-}
-
-.footer-btn {
-    display: flex;
-    align-items: center;
-    color: white;
-    cursor: pointer;
-    font-size: 11px;
-}
-
-.footer-btn:hover {
-    text-decoration: underline;
+    > img {
+        width: 1.625rem;
+        height: 1.625rem;
+        object-fit: contain;
+    }
 }

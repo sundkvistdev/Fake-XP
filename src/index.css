@@ -1,1 +1,28 @@
-@import "tailwindcss";
+/* Win32 & XP System Root Styles */
+:root {
+  --xp-blue: #0054e3;
+  --xp-blue-light: #0058e6;
+  --xp-blue-dark: #00309c;
+  --xp-inactive: #7697d9;
+  --xp-inactive-light: #9db9eb;
+  --xp-inactive-dark: #6284c7;
+  --xp-bg: #ece9d8;
+  --xp-btn-face: #ece9d8;
+  --xp-btn-highlight: #ffffff;
+  --xp-btn-shadow: #aca899;
+  --xp-btn-darkshadow: #716f64;
+  --xp-window-frame: #000000;
+  --xp-highlight: #316ac5;
+  --xp-highlight-text: #ffffff;
+  --xp-border-inset: #7f9db9;
+  --xp-font-main: "Tahoma", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --xp-font-mono: "Lucida Console", "Courier New", monospace;
+  --xp-ui-font-size: 0.8125rem;
+  --xp-ui-font-size-sm: 0.75rem;
+  --xp-ui-font-size-lg: 0.9375rem;
+  --xp-ui-font-size-title: 0.875rem;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}

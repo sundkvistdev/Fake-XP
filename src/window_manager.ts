@@ -14,6 +14,7 @@ export class AppWindow implements AppInstance {
     public isMinimized: boolean = false;
     public isMaximized: boolean = false;
     public onClose?: () => void;
+    public icon?: string;
     public prevRect: { width: number; height: number; x: number; y: number } | null = null;
     public element!: HTMLElement;
     public overlay?: HTMLElement;
@@ -27,6 +28,7 @@ export class AppWindow implements AppInstance {
         this.title = options.title || 'New Window';
         this.width = options.width || 400;
         this.height = options.height || 300;
+        this.icon = options.icon;
         
         const count = windowManager.getWindowsCount();
         this.x = options.x || (50 + count * 20);
@@ -105,6 +107,16 @@ export class AppWindow implements AppInstance {
                 { text: 'Close', action: () => { this.close(); } }
             ]);
         };
+
+        if (this.icon) {
+            const iconWrap = document.createElement('div');
+            iconWrap.className = 'window-icon';
+            const img = document.createElement('img');
+            img.src = this.icon;
+            img.referrerPolicy = 'no-referrer';
+            iconWrap.appendChild(img);
+            titlebar.appendChild(iconWrap);
+        }
         
         const title = document.createElement('div');
         title.className = 'window-title';

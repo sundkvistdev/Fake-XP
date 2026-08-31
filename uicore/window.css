@@ -1,230 +1,247 @@
-/* Windows XP Window Styles */
+/* Windows XP Window & Dialog Stylesheet */
 :root {
     --xp-blue: #0054e3;
     --xp-blue-light: #0058e6;
     --xp-blue-dark: #00309c;
-    --xp-inactive: #9db9eb;
+    --xp-inactive: #7697d9;
+    --xp-inactive-light: #9db9eb;
+    --xp-inactive-dark: #6284c7;
+    --xp-ui-font-size: 0.8125rem;
+    --xp-ui-font-size-sm: 0.75rem;
+    --xp-ui-font-size-title: 0.875rem;
 }
 
 .window {
     position: absolute;
     background: #ece9d8;
-    border: 3px solid var(--xp-blue);
+    border: 4px solid var(--xp-inactive);
     border-top-width: 0;
-    border-radius: 8px 8px 0 0;
+    border-radius: 0.5rem 0.5rem 0 0;
     display: flex;
     flex-direction: column;
-    min-width: 200px;
-    min-height: 100px;
-    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    min-width: 15rem;
+    min-height: 8rem;
+    box-shadow: 2px 3px 12px rgba(0, 0, 0, 0.4);
     z-index: 100;
+    font-size: var(--xp-ui-font-size);
+
+    &.active {
+        border-color: var(--xp-blue);
+
+        > .window-titlebar {
+            background: linear-gradient(180deg, var(--xp-blue-light) 0%, var(--xp-blue) 12%, var(--xp-blue-light) 25%, var(--xp-blue-light) 85%, var(--xp-blue-dark) 100%);
+            color: #ffffff;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.7);
+        }
+    }
+
+    &.maximized {
+        border-radius: 0;
+        border-width: 2px;
+
+        > .window-titlebar {
+            border-radius: 0;
+        }
+
+        > .window-resize-handle {
+            display: none;
+        }
+    }
+
+    &.dialog {
+        border: 4px solid var(--xp-blue);
+        border-radius: 0.5rem;
+        box-shadow: 0 0 24px rgba(0, 0, 0, 0.5);
+    }
+
+    > .window-titlebar {
+        height: 2rem;
+        background: linear-gradient(180deg, var(--xp-inactive-light) 0%, var(--xp-inactive) 12%, var(--xp-inactive-light) 25%, var(--xp-inactive-dark) 100%);
+        border-radius: 0.375rem 0.375rem 0 0;
+        display: flex;
+        align-items: center;
+        padding: 0 0.375rem 0 0.5rem;
+        color: #d8e4f8;
+        font-weight: bold;
+        cursor: default;
+        flex-shrink: 0;
+
+        > .window-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+
+            > img {
+                width: 1.25rem;
+                height: 1.25rem;
+                object-fit: contain;
+            }
+        }
+
+        > .window-title {
+            flex-grow: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: var(--xp-ui-font-size-title);
+            line-height: 2rem;
+            letter-spacing: 0.01em;
+        }
+
+        > .window-controls {
+            display: flex;
+            gap: 0.1875rem;
+            align-items: center;
+
+            > .window-btn {
+                width: 1.5rem;
+                height: 1.5rem;
+                border: 1px solid #ffffff;
+                border-radius: 0.1875rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8125rem;
+                font-weight: bold;
+                cursor: pointer;
+                background: linear-gradient(180deg, #4c8ffc 0%, #0054e3 100%);
+                color: #ffffff;
+                outline: none;
+                line-height: 1;
+                padding: 0;
+
+                &:hover {
+                    filter: brightness(1.2);
+                }
+
+                &:active {
+                    filter: brightness(0.9);
+                }
+
+                &.close {
+                    background: linear-gradient(180deg, #f77d56 0%, #d43c0b 100%);
+                }
+            }
+        }
+    }
+
+    > .window-content {
+        flex-grow: 1;
+        background: #ece9d8;
+        margin: 0.125rem;
+        border: 1px solid #7f9db9;
+        overflow: auto;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        min-width: 0;
+        box-sizing: border-box;
+        font-size: var(--xp-ui-font-size);
+    }
 }
 
-.window-titlebar {
-    height: 25px;
-    background: linear-gradient(to bottom, var(--xp-inactive) 0%, var(--xp-inactive) 100%);
-    border-radius: 7px 7px 0 0;
-    display: flex;
-    align-items: center;
-    padding: 0 5px;
-    color: #d8e4f8;
-    font-weight: bold;
-    cursor: default;
-}
-
-.window.active .window-titlebar {
-    background: linear-gradient(to bottom, var(--xp-blue-light) 0%, var(--xp-blue) 10%, var(--xp-blue-light) 20%, var(--xp-blue-light) 90%, var(--xp-blue-dark) 100%);
-    color: white;
-}
-
-.window-title {
-    flex-grow: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-left: 5px;
-}
-
-.window-controls {
-    display: flex;
-    gap: 2px;
-}
-
-.window-btn {
-    width: 21px;
-    height: 21px;
-    border: 1px solid white;
-    border-radius: 3px;
+/* Modal Overlays */
+.modal-overlay, .topmodal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.35);
+    z-index: 10000;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-    background: linear-gradient(to bottom, #4c8ffc 0%, #0054e3 100%);
-}
-
-.window-btn:hover {
-    filter: brightness(1.2);
-}
-
-.window-btn.close {
-    background: linear-gradient(to bottom, #f77d56 0%, #d43c0b 100%);
-}
-
-.window-content {
-    flex-grow: 1;
-    background: white;
-    margin: 2px;
-    border: 1px solid #7f9db9;
-    overflow: auto;
-    position: relative;
-}
-
-.notepad-content {
-    width: 100%;
-    height: 100%;
-    border: none;
-    resize: none;
-    padding: 5px;
-    outline: none;
-}
-
-.explorer-content {
-    padding: 0;
-}
-
-.window.maximized {
-    border-radius: 0;
-    border-width: 1px;
-}
-
-.window.maximized .window-titlebar {
-    border-radius: 0;
-}
-
-.explorer-grid-item:hover {
-    background: #e5f3ff;
-    outline: 1px solid #99d1ff;
-}
-
-.sidebar-link {
-    padding: 5px;
-    cursor: pointer;
-    font-size: 11px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-.sidebar-link:hover {
-    text-decoration: underline;
-}
-
-/* Tooltips */
-.xp-tooltip {
-    position: fixed;
-    background: #ffffe1;
-    border: 1px solid #000;
-    padding: 2px 5px;
-    font-size: 11px;
-    z-index: 9999;
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    box-shadow: 2px 2px 2px rgba(0,0,0,0.2);
-    color: black;
-}
-
-/* Balloon Tips */
-.balloon-tip {
-    position: fixed;
-    width: 200px;
-    background: #ffffe1;
-    border: 1px solid #000;
-    border-radius: 5px;
-    padding: 10px;
-    z-index: 9998;
-    box-shadow: 3px 3px 5px rgba(0,0,0,0.3);
-    font-family: Tahoma, sans-serif;
-    color: black;
-}
-
-.balloon-tip::after {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    right: 20px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-top: 10px solid #000;
-}
-
-.balloon-close {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    cursor: pointer;
-    font-size: 10px;
-    font-weight: bold;
-}
-
-.balloon-title {
-    font-weight: bold;
-    font-size: 12px;
-    margin-bottom: 5px;
-    color: #003399;
-}
-
-.balloon-content {
-    font-size: 11px;
+    pointer-events: auto;
 }
 
 /* Context Menu */
 .context-menu {
     position: fixed;
-    background: #fff;
+    background: #ffffff;
     border: 1px solid #aca899;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-    padding: 2px;
-    z-index: 10000;
-    min-width: 150px;
-    font-family: Tahoma, sans-serif;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.35);
+    padding: 0.1875rem;
+    z-index: 100000;
+    min-width: 12rem;
+    font-family: var(--xp-font-main);
+    font-size: var(--xp-ui-font-size);
+
+    > .context-item {
+        padding: 0.3125rem 1.25rem 0.3125rem 1.5rem;
+        font-size: var(--xp-ui-font-size);
+        cursor: default;
+        color: #000000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        &:hover {
+            background: var(--xp-highlight);
+            color: var(--xp-highlight-text);
+        }
+
+        &.disabled {
+            color: #888888;
+            background: transparent !important;
+        }
+    }
+
+    > .context-separator {
+        height: 1px;
+        background: #aca899;
+        margin: 0.25rem 0.125rem;
+    }
 }
 
-.context-item {
-    padding: 3px 20px 3px 25px;
-    font-size: 11px;
-    cursor: default;
-    color: black;
-}
+/* Balloon Tip */
+.balloon-tip {
+    position: fixed;
+    width: 16rem;
+    background: #ffffe1;
+    border: 1px solid #000000;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    z-index: 9998;
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.35);
+    font-family: var(--xp-font-main);
+    color: #000000;
+    font-size: var(--xp-ui-font-size);
 
-.context-item:hover {
-    background: #316ac5;
-    color: white;
-}
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -0.625rem;
+        right: 1.5rem;
+        border-left: 0.625rem solid transparent;
+        border-right: 0.625rem solid transparent;
+        border-top: 0.625rem solid #000000;
+    }
 
-.context-separator {
-    height: 1px;
-    background: #aca899;
-    margin: 3px 1px;
-}
+    > .balloon-close {
+        position: absolute;
+        top: 0.375rem;
+        right: 0.375rem;
+        cursor: pointer;
+        font-size: var(--xp-ui-font-size-sm);
+        font-weight: bold;
+        padding: 0.125rem 0.25rem;
+    }
 
-.window.dialog {
-    border: 3px solid #0054e3;
-    border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
+    > .balloon-title {
+        font-weight: bold;
+        font-size: var(--xp-ui-font-size-title);
+        margin-bottom: 0.375rem;
+        color: #003399;
+    }
 
-.explorer-item:hover {
-    background-color: #316ac5;
-    color: white;
-}
-
-button {
-    font-family: inherit;
-    font-size: 11px;
-    padding: 2px 10px;
-    cursor: pointer;
+    > .balloon-content {
+        font-size: var(--xp-ui-font-size);
+        line-height: 1.4;
+    }
 }

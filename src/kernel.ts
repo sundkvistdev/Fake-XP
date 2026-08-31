@@ -371,11 +371,11 @@ export class Kernel implements IKernel {
         }
     }
 
-    public getSCT(): Record<string, unknown> {
-        return (this.Registry.get('System') as Record<string, unknown>) || {};
+    public getSCT<T = Record<string, unknown>>(): T {
+        return (this.Registry.get<T>('System') || {}) as T;
     }
 
-    public setSCT(data: Record<string, unknown>): void {
+    public setSCT<T = Record<string, unknown>>(data: T): void {
         this.Registry.set('System', data);
     }
 
@@ -501,20 +501,24 @@ export class Kernel implements IKernel {
     public showDialog(options: DialogOptions): AppInstance | null {
         const container = document.createElement('div');
         Object.assign(container.style, {
-            padding: '15px',
+            padding: '1rem',
             display: 'flex',
             flexDirection: 'column',
-            gap: '15px',
-            background: '#f0f0f0',
+            gap: '0.75rem',
+            background: 'var(--xp-bg)',
             height: '100%',
-            boxSizing: 'border-box'
+            minHeight: '0',
+            boxSizing: 'border-box',
+            overflow: 'hidden'
         });
 
         const topPart = document.createElement('div');
         Object.assign(topPart.style, {
             display: 'flex',
-            gap: '15px',
-            alignItems: 'flex-start'
+            gap: '0.875rem',
+            alignItems: 'flex-start',
+            flexShrink: '0',
+            minHeight: '0'
         });
         
         let iconUrl = options.icon;
@@ -527,16 +531,23 @@ export class Kernel implements IKernel {
         
         const icon = document.createElement('img');
         icon.src = iconUrl;
-        icon.style.width = '32px';
-        icon.style.height = '32px';
+        icon.style.width = '2.25rem';
+        icon.style.height = '2.25rem';
+        icon.style.objectFit = 'contain';
+        icon.style.flexShrink = '0';
         icon.referrerPolicy = 'no-referrer';
         topPart.appendChild(icon);
 
         const msg = document.createElement('div');
         Object.assign(msg.style, {
-            fontSize: '12px',
+            fontSize: 'var(--xp-ui-font-size)',
+            lineHeight: '1.45',
             flex: '1',
-            color: '#333'
+            color: '#000000',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            maxHeight: '16rem',
+            overflowY: 'auto'
         });
         msg.innerText = options.message || '';
         topPart.appendChild(msg);
@@ -547,7 +558,7 @@ export class Kernel implements IKernel {
         if (options.type === 'prompt') {
             input = this.FCCF.Controls.Input({
                 value: options.value || '',
-                style: { width: '100%' }
+                style: { width: '100%', boxSizing: 'border-box' }
             });
             container.appendChild(input.el);
         }
@@ -555,7 +566,7 @@ export class Kernel implements IKernel {
         if (options.multiSelect) {
             const list = this.FCCF.Controls.List({
                 items: options.items || [],
-                style: { height: '100px', background: 'white', border: '1px solid #7f9db9' }
+                style: { height: '7.5rem', background: '#ffffff', border: '1px solid #7f9db9', flexGrow: '1', minHeight: '0', boxSizing: 'border-box' }
             });
             container.appendChild(list.el);
         }
@@ -569,7 +580,7 @@ export class Kernel implements IKernel {
             });
             const dropdown = this.FCCF.Controls.Dropdown({
                 items: ddItems,
-                style: { width: '100%' },
+                style: { width: '100%', boxSizing: 'border-box' },
                 onChange: options.onDropdownChange
             });
             container.appendChild(dropdown.el);
@@ -583,9 +594,11 @@ export class Kernel implements IKernel {
         const btnContainer = document.createElement('div');
         Object.assign(btnContainer.style, {
             display: 'flex',
-            gap: '10px',
-            justifyContent: 'center',
-            marginTop: 'auto'
+            gap: '0.625rem',
+            justifyContent: 'flex-end',
+            marginTop: 'auto',
+            paddingTop: '0.5rem',
+            flexShrink: '0'
         });
         container.appendChild(btnContainer);
 
@@ -593,8 +606,8 @@ export class Kernel implements IKernel {
 
         const okBtn = document.createElement('button');
         okBtn.innerText = options.okText || 'OK';
-        okBtn.className = 'xp-button';
-        okBtn.style.minWidth = '75px';
+        okBtn.className = 'xp-button xp-btn-default';
+        okBtn.style.minWidth = '5.25rem';
         okBtn.onclick = () => {
             if (options.onOk) {
                 options.onOk(options.type === 'prompt' && input ? (input as unknown as { getValue: () => string }).getValue() : true);
@@ -607,7 +620,7 @@ export class Kernel implements IKernel {
             const cancelBtn = document.createElement('button');
             cancelBtn.innerText = options.cancelText || 'Cancel';
             cancelBtn.className = 'xp-button';
-            cancelBtn.style.minWidth = '75px';
+            cancelBtn.style.minWidth = '5.25rem';
             cancelBtn.onclick = () => {
                 if (options.onCancel) options.onCancel();
                 if (win) win.close();
@@ -619,10 +632,23 @@ export class Kernel implements IKernel {
             id: 'dialog-' + Math.random().toString(36).substring(2, 9)
         }) as unknown as AppInstance;
 
+        let computedHeight = 175;
+        if (options.type === 'prompt') computedHeight = 210;
+        else if (options.multiSelect) computedHeight = 280;
+        else if (options.dropdown) computedHeight = 215;
+        else if (options.type === 'progress') computedHeight = 190;
+
+        const lines = (options.message || '').split('\n').length;
+        if (lines > 2) {
+            computedHeight += Math.min(100, (lines - 2) * 20);
+        } else if ((options.message || '').length > 100) {
+            computedHeight += 30;
+        }
+
         const winId = this.WindowManager.createWindow({
             title: options.title || 'System Message',
-            width: 350,
-            height: options.type === 'prompt' ? 180 : 150,
+            width: options.width || 400,
+            height: options.height || computedHeight,
             isDialog: true,
             content: container,
             type: options.modal ? 'modal' : (options.topmodal ? 'topmodal' : 'normal'),

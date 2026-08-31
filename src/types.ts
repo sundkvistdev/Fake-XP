@@ -1,14 +1,20 @@
-/* TypeScript Types, Interfaces, and Schemas or the FakeXP Kernel & FCCF */
+/**
+ * TypeScript Definitions and Interfaces for FakeXP Kernel, FCCF & Win32 HIG
+ */
 
 export interface VFSMetadata {
     owner?: string;
     permissions?: string;
+    readonly?: boolean;
+    hidden?: boolean;
+    system?: boolean;
+    modified?: number;
     [key: string]: unknown;
 }
 
 export interface VFSNode {
     type: 'file' | 'dir';
-    children?: { [name: string]: VFSNode };
+    children?: Record<string, VFSNode>;
     content?: string;
     isLink?: boolean;
     metadata?: VFSMetadata;
@@ -37,6 +43,8 @@ export interface IVirtualFileSystem {
     rename(oldPath: string, newName: string): boolean;
     move(oldPath: string, newDirPath: string): boolean;
     delete(path: string): boolean;
+    exists(path: string): boolean;
+    watch(path: string, callback: () => void): () => void;
     createReadStream(path: string): VFSStream | null;
     createWriteStream(path: string): VFSStream;
     exportImage(): string;
@@ -71,6 +79,7 @@ export interface AppInstance {
     maximize(): void;
     restore(): void;
     focus(): void;
+    setTitle(newTitle: string): void;
 }
 
 export interface WindowOptions {
@@ -85,6 +94,19 @@ export interface WindowOptions {
     isDialog?: boolean;
     x?: number;
     y?: number;
+    icon?: string;
+}
+
+export interface MenuItem {
+    text?: string;
+    action?: () => void;
+    onClick?: () => void;
+    separator?: boolean;
+    icon?: string;
+    shortcut?: string;
+    checked?: boolean;
+    disabled?: boolean;
+    menu?: MenuItem[];
 }
 
 export interface IWindowManager {
@@ -113,15 +135,6 @@ export interface CreateElementOptions {
     [key: string]: unknown;
 }
 
-export interface MenuItem {
-    text?: string;
-    action?: () => void;
-    onClick?: () => void;
-    separator?: boolean;
-    icon?: string;
-    menu?: MenuItem[];
-}
-
 export interface TrayIconOptions {
     title: string;
     icon: string;
@@ -142,6 +155,8 @@ export type PaneComponent = FCCFComponent<HTMLDivElement>;
 
 export type ButtonComponent = FCCFComponent<HTMLButtonElement, {
     onClick?: (e?: MouseEvent) => void;
+    setDisabled: (disabled: boolean) => void;
+    setText: (text: string) => void;
 }>;
 
 export type InputComponent = FCCFComponent<HTMLInputElement | HTMLTextAreaElement, {
@@ -153,8 +168,8 @@ export type ProgressBarComponent = FCCFComponent<HTMLDivElement, {
     setProgress: (val: number) => void;
 }>;
 
-export type ListComponent = FCCFComponent<HTMLUListElement, {
-    update: (items: (string | HTMLElement | FCCFComponent)[]) => void;
+export type ListComponent<T = unknown> = FCCFComponent<HTMLUListElement, {
+    update: (items: (string | HTMLElement | FCCFComponent | T)[]) => void;
 }>;
 
 export type GridComponent = FCCFComponent<HTMLDivElement>;
@@ -167,8 +182,10 @@ export type ImageComponent = FCCFComponent<HTMLImageElement, {
     onClick?: () => void;
 }>;
 
-export type DropdownComponent = FCCFComponent<HTMLSelectElement, {
-    onChange?: (val: string) => void;
+export type DropdownComponent<T = string> = FCCFComponent<HTMLSelectElement, {
+    getValue: () => T;
+    setValue: (val: T) => void;
+    onChange?: (val: T) => void;
 }>;
 
 export type MenuComponent = FCCFComponent<HTMLDivElement, {
@@ -183,17 +200,71 @@ export type MenuStripComponent = FCCFComponent<HTMLDivElement>;
 export type TreeComponent = FCCFComponent<HTMLDivElement>;
 
 export type SliderComponent = FCCFComponent<HTMLInputElement, {
+    getValue: () => number;
+    setValue: (val: number) => void;
     onChange?: (val: string) => void;
 }>;
 
 export type InstallerComponent = FCCFComponent<HTMLDivElement>;
 
+export interface StatusBarPanel {
+    id?: string;
+    text?: string;
+    width?: string;
+    flexGrow?: boolean;
+    icon?: string;
+}
 
-// Controls interfaces
+export type StatusBarComponent = FCCFComponent<HTMLDivElement, {
+    setPanelText: (indexOrId: number | string, text: string) => void;
+    getPanelText: (indexOrId: number | string) => string;
+}>;
+
+export interface ToolbarItem {
+    id?: string;
+    text?: string;
+    icon?: string;
+    tooltip?: string;
+    separator?: boolean;
+    disabled?: boolean;
+    active?: boolean;
+    onClick?: () => void;
+}
+
+export type ToolbarComponent = FCCFComponent<HTMLDivElement, {
+    setItemDisabled: (indexOrId: number | string, disabled: boolean) => void;
+    setItemActive: (indexOrId: number | string, active: boolean) => void;
+}>;
+
+export interface TabItem {
+    id: string;
+    title: string;
+    content: HTMLElement | FCCFComponent | string;
+}
+
+export type TabControlComponent = FCCFComponent<HTMLDivElement, {
+    setActiveTab: (id: string) => void;
+    getActiveTab: () => string;
+}>;
+
+export interface ListViewColumn {
+    id: string;
+    name: string;
+    width?: string;
+}
+
+export type ListViewComponent<T = Record<string, unknown>> = FCCFComponent<HTMLDivElement, {
+    setItems: (items: T[]) => void;
+    getSelectedItems: () => T[];
+}>;
+
+export type GroupBoxComponent = FCCFComponent<HTMLFieldSetElement>;
+
+// Controls options interfaces
 export interface PaneOptions {
     style?: Partial<CSSStyleDeclaration>;
     className?: string;
-    children?: (HTMLElement | FCCFComponent | Node)[];
+    children?: (HTMLElement | FCCFComponent | Node | string)[];
 }
 
 export interface ButtonOptions {
@@ -203,6 +274,7 @@ export interface ButtonOptions {
     onClick?: (e?: MouseEvent) => void;
     contextMenu?: MenuItem[];
     disabled?: boolean;
+    default?: boolean;
 }
 
 export interface InputOptions {
@@ -213,17 +285,19 @@ export interface InputOptions {
     style?: Partial<CSSStyleDeclaration>;
     onChange?: (val: string) => void;
     contextMenu?: MenuItem[];
+    placeholder?: string;
+    readOnly?: boolean;
 }
 
 export interface ProgressBarOptions {
     value?: number;
 }
 
-export interface ListOptions {
-    items?: (string | HTMLElement | FCCFComponent)[];
+export interface ListOptions<T = unknown> {
+    items?: (string | HTMLElement | FCCFComponent | T)[];
     className?: string;
     style?: Partial<CSSStyleDeclaration>;
-    onItemClick?: (item: unknown) => void;
+    onItemClick?: (item: T | string, el?: HTMLElement) => void;
 }
 
 export interface GridOptions {
@@ -250,12 +324,18 @@ export interface ImageOptions {
     onClick?: () => void;
 }
 
-export interface DropdownOptions {
-    items?: (string | { value: string; text: string; selected?: boolean })[];
-    value?: string;
+export interface DropdownItem<T = string> {
+    value: T;
+    text: string;
+    selected?: boolean;
+}
+
+export interface DropdownOptions<T = string> {
+    items?: (string | DropdownItem<T>)[];
+    value?: T;
     className?: string;
     style?: Partial<CSSStyleDeclaration>;
-    onChange?: (val: string) => void;
+    onChange?: (val: T) => void;
 }
 
 export interface MenuOptions {
@@ -269,18 +349,26 @@ export interface SplitterOptions {
     onResize?: (delta: number) => void;
 }
 
-export interface MenuStripOptions {
-    items: { text: string; menu?: MenuItem[]; onClick?: () => void }[];
-}
-
-export interface TreeNode {
+export interface MenuStripItem {
     text: string;
-    children?: TreeNode[];
+    menu?: MenuItem[];
+    onClick?: () => void;
 }
 
-export interface TreeOptions {
-    data: TreeNode[];
-    onNodeClick?: (node: TreeNode) => void;
+export interface MenuStripOptions {
+    items: MenuStripItem[];
+}
+
+export interface TreeNode<T = unknown> {
+    text: string;
+    data?: T;
+    icon?: string;
+    children?: TreeNode<T>[];
+}
+
+export interface TreeOptions<T = TreeNode> {
+    data: T[];
+    onNodeClick?: (node: T) => void;
 }
 
 export interface SliderOptions {
@@ -301,11 +389,41 @@ export interface InstallerOptions {
     onCancel?: () => void;
 }
 
+export interface StatusBarOptions {
+    panels: StatusBarPanel[];
+}
+
+export interface ToolbarOptions {
+    items: ToolbarItem[];
+}
+
+export interface TabControlOptions {
+    tabs: TabItem[];
+    activeTabId?: string;
+    onTabChange?: (tabId: string) => void;
+}
+
+export interface ListViewOptions<T = Record<string, unknown>> {
+    columns: ListViewColumn[];
+    items?: T[];
+    onItemClick?: (item: T) => void;
+    onItemDoubleClick?: (item: T) => void;
+    onContextMenu?: (item: T, e: MouseEvent) => void;
+}
+
+export interface GroupBoxOptions {
+    title: string;
+    children?: (HTMLElement | FCCFComponent | Node | string)[];
+    style?: Partial<CSSStyleDeclaration>;
+}
+
 export interface DialogOptions {
     title?: string;
     message: string;
     type?: 'info' | 'error' | 'warning' | 'confirm' | 'prompt' | 'multiSelect' | 'dropdown' | 'progress';
     value?: string;
+    width?: number;
+    height?: number;
     onOk?: (val?: unknown) => void;
     onCancel?: () => void;
     items?: (string | HTMLElement | FCCFComponent)[];
@@ -331,26 +449,36 @@ export interface IFCCF {
         Button(options?: ButtonOptions): ButtonComponent;
         Input(options?: InputOptions): InputComponent;
         ProgressBar(options?: ProgressBarOptions): ProgressBarComponent;
-        List(options?: ListOptions): ListComponent;
+        List<T = unknown>(options?: ListOptions<T>): ListComponent<T>;
         Grid(options?: GridOptions): GridComponent;
         Link(options?: LinkOptions): LinkComponent;
         Image(options?: ImageOptions): ImageComponent;
         Icon(options?: ImageOptions & { size?: string }): ImageComponent;
-        Dropdown(options?: DropdownOptions): DropdownComponent;
+        Dropdown<T = string>(options?: DropdownOptions<T>): DropdownComponent<T>;
         Menu(options?: MenuOptions): MenuComponent;
         Splitter(options?: SplitterOptions): SplitterComponent;
         MenuStrip(options?: MenuStripOptions): MenuStripComponent;
-        Tree(options?: TreeOptions): TreeComponent;
+        Tree<T = TreeNode>(options: TreeOptions<T>): TreeComponent;
         Slider(options?: SliderOptions): SliderComponent;
         Installer(options?: InstallerOptions): InstallerComponent;
+        StatusBar(options?: StatusBarOptions): StatusBarComponent;
+        Toolbar(options?: ToolbarOptions): ToolbarComponent;
+        TabControl(options?: TabControlOptions): TabControlComponent;
+        ListView<T = Record<string, unknown>>(options?: ListViewOptions<T>): ListViewComponent<T>;
+        GroupBox(options: GroupBoxOptions): GroupBoxComponent;
     };
     Window(options?: WindowOptions): string;
 }
 
 export interface IRegistry {
-    get<T = unknown>(path: string): T;
+    get<T = unknown>(path: string, defaultValue?: T): T;
     set<T = unknown>(path: string, value: T): void;
     delete(path: string): void;
+    exists(path: string): boolean;
+    keys(path: string): string[];
+    observe<T = unknown>(path: string, callback: (newVal: T) => void): () => void;
+    getAll(): Record<string, unknown>;
+    dump<T = Record<string, unknown>>(): T;
 }
 
 export interface IKernel {
