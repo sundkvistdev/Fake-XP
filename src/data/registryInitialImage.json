@@ -1,16 +1,17 @@
 {
   "System": {
-    "Version": "5.1.2600",
-    "Owner": "Administrator",
+    "Product": "FXP OS",
+    "Version": "2.1",
+    "Owner": "Sam",
     "Theme": "Luna",
     "Wallpaper": "https://picsum.photos/seed/bliss/1920/1080",
     "BootTime": 1714000000000,
     "ShowClock": true,
     "TaskbarSize": 30,
     "DesktopIconSize": 48,
-    "ComputerName": "XP-RETRO-PC",
-    "RegisteredOrganization": "Retro Corp",
-    "InstallDate": "2001-10-25",
+    "ComputerName": "SAMSOFT-FXP-PC",
+    "RegisteredOrganization": "Samsoft Corporation",
+    "InstallDate": "2026-09-04",
     "Associations": {
       "txt": "notepad",
       "js": "ADR",

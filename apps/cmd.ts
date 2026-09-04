@@ -2,9 +2,14 @@ import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
 
 export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) {
     const [getCurrentDir, setCurrentDir, subscribeCurrentDir] = FCCF.useState<string>('C:');
+    const sct = XP_API.getSCT<{ Version?: string; Branding?: { Company?: string; Product?: string; Version?: string } }>();
+    const company = sct?.Branding?.Company || 'Samsoft';
+    const product = sct?.Branding?.Product || 'FXP OS';
+    const version = sct?.Branding?.Version || sct?.Version || '2.1';
+
     const [getOutput, setOutput, subscribeOutput] = FCCF.useState<string[]>([
-        'Microsoft Windows XP [Version 5.1.2600]',
-        '(C) Copyright 1985-2001 Microsoft Corp.',
+        `${company} ${product} [Version ${version}]`,
+        `(C) Copyright 1985-2026 ${company} Corp.`,
         ''
     ]);
     const [getHistory, setHistory] = FCCF.useState<string[]>([]);
@@ -96,7 +101,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             setOutput([]);
             return;
         } else if (cmd === 'ver') {
-            lines.push('Microsoft Windows XP [Version 5.1.2600]');
+            lines.push(`${company} ${product} [Version ${version}]`);
         } else if (cmd === 'dir') {
             const targetPath = cmdArgs[0] ? resolvePath(cmdArgs[0]) : getCurrentDir();
             const items = VFS.ls(targetPath);

@@ -196,7 +196,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'Help',
                 menu: [
-                    { text: 'About User Accounts', action: () => XP_API.showDialog({ title: 'About User Accounts', message: 'Microsoft Windows XP User Accounts Manager\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\nWin32 HIG Compliant', type: 'info' }) }
+                    { text: 'About User Accounts', action: () => XP_API.showAboutDialog('User Accounts') }
                 ]
             }
         ]

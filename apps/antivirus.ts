@@ -121,7 +121,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'Help',
                 menu: [
-                    { text: 'About Antivirus', action: () => XP_API.showDialog({ title: 'About CentralFirm Antivirus', message: 'CentralFirm Security & Antivirus\nVersion 5.1 for Windows XP\nWin32 HIG Compliant', type: 'info' }) }
+                    { text: 'About Antivirus', action: () => XP_API.showAboutDialog('CentralFirm Antivirus') }
                 ]
             }
         ]

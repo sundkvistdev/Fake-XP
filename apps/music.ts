@@ -180,7 +180,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'Help',
                 menu: [
-                    { text: 'About Windows Media Player', action: () => XP_API.showDialog({ title: 'About Windows Media Player', message: 'Windows Media Player 9 Series for Windows XP\nVersion 9.00.00.2980\nWin32 HIG Compliant', type: 'info' }) }
+                    { text: 'About Windows Media Player', action: () => XP_API.showAboutDialog('Windows Media Player') }
                 ]
             }
         ]

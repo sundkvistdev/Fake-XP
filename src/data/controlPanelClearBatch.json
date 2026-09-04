@@ -1,10 +1,10 @@
 {
   "type": "ClearBatchApp",
-  "version": "2.0",
+  "version": "2.1",
   "meta": {
     "name": "Control Panel",
-    "author": "Microsoft Corporation / ClearBatch Runtime",
-    "description": "System Control Center, Device Configurator and Security Management"
+    "author": "Samsoft Corporation / ClearBatch Runtime",
+    "description": "System Control Center, Device Configurator and Security Management for Samsoft FXP OS"
   },
   "window": {
     "title": "Control Panel",
@@ -16,7 +16,7 @@
     "firewallStatus": "Active & Monitored",
     "avStatus": "Real-time Shield Enabled",
     "updatesStatus": "Configured (Automatic)",
-    "clearbatchStatus": "ClearBatch v2.0 Declarative Engine Ready",
+    "clearbatchStatus": "ClearBatch v2.1 Declarative Engine Ready",
     "statusMessage": "Choose a category or launch an applet"
   },
   "menu": [

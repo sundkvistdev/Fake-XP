@@ -1,0 +1,34 @@
+{
+  "Administrator": {
+    "username": "Administrator",
+    "displayName": "Administrator",
+    "passwordHash": "57b6ad5cfb5cfc7ee83a48e7e17cb9ba",
+    "privilege": "admin",
+    "avatar": "https://img.icons8.com/color/48/000000/administrator-male.png",
+    "description": "Built-in account for administering the computer/domain"
+  },
+  "Sam": {
+    "username": "Sam",
+    "displayName": "Sam",
+    "passwordHash": "81dc9bdb52d04dc20036dbd8313ed055",
+    "privilege": "admin",
+    "avatar": "https://img.icons8.com/color/48/000000/astronaut.png",
+    "description": "Primary Administrator Account"
+  },
+  "StandardUser": {
+    "username": "StandardUser",
+    "displayName": "Standard User",
+    "passwordHash": "81dc9bdb52d04dc20036dbd8313ed055",
+    "privilege": "user",
+    "avatar": "https://img.icons8.com/color/48/000000/guest-male.png",
+    "description": "Standard User with restricted system rights"
+  },
+  "Guest": {
+    "username": "Guest",
+    "displayName": "Guest Account",
+    "passwordHash": "",
+    "privilege": "guest",
+    "avatar": "https://img.icons8.com/color/48/000000/user-male-circle.png",
+    "description": "Restricted guest access with no password requirement"
+  }
+}

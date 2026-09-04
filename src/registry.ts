@@ -109,6 +109,31 @@ export class Registry implements IRegistry {
         return this.keys(path);
     }
 
+    public getSubKeys(path: string): string[] {
+        const val = this.get<Record<string, unknown>>(path);
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            return Object.keys(val).filter(k => {
+                const sub = val[k];
+                return sub !== null && typeof sub === 'object' && !Array.isArray(sub);
+            });
+        }
+        return [];
+    }
+
+    public getValues(path: string): Record<string, unknown> {
+        const val = this.get<Record<string, unknown>>(path);
+        const result: Record<string, unknown> = {};
+        if (val && typeof val === 'object' && !Array.isArray(val)) {
+            for (const k of Object.keys(val)) {
+                const item = val[k];
+                if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+                    result[k] = item;
+                }
+            }
+        }
+        return result;
+    }
+
     public observe<T = unknown>(path: string, callback: (newVal: T) => void): () => void {
         if (!this.observers.has(path)) {
             this.observers.set(path, new Set());

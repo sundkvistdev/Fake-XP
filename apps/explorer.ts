@@ -1,4 +1,5 @@
 import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
+import { ExtraX } from '../src/extrax';
 
 export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) {
     const expArgs = args as { mode?: string; initialPath?: string } | undefined;
@@ -404,7 +405,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'Help',
                 menu: [
-                    { text: 'About Windows', action: () => XP_API.showDialog({ title: 'About Windows', message: 'Microsoft Windows XP Professional\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\nWin32 HIG Compliant', type: 'info' }) }
+                    { text: 'About FXP OS', action: () => XP_API.showAboutDialog('Windows Explorer') }
                 ]
             }
         ]
@@ -465,48 +466,93 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         ]
     });
 
-    // Left XP Task Pane
+    // Left ExtraX Task Pane
     const taskPane = document.createElement('div');
-    taskPane.style.width = '12.5rem';
-    taskPane.style.background = 'linear-gradient(180deg, #748aff 0%, #4058d3 100%)';
-    taskPane.style.color = '#ffffff';
-    taskPane.style.padding = '0.5rem';
-    taskPane.style.display = 'flex';
-    taskPane.style.flexDirection = 'column';
-    taskPane.style.gap = '0.5rem';
+    taskPane.className = 'extrax-taskpane';
+    taskPane.style.width = '13rem';
     taskPane.style.flexShrink = '0';
     taskPane.style.overflowY = 'auto';
 
     const renderTaskPane = () => {
-        taskPane.innerHTML = `
-            <div style="background:#ffffff;border-radius:0.25rem;overflow:hidden;color:#000000;">
-                <div style="background:linear-gradient(90deg, #0054e3 0%, #3f8cf3 100%);color:#ffffff;padding:0.25rem 0.5rem;font-weight:bold;">File and Folder Tasks</div>
-                <div style="padding:0.375rem;display:flex;flex-direction:column;gap:0.25rem;font-size:0.6875rem;">
-                    <div id="tp-newfolder" style="color:#003399;cursor:pointer;">📁 Make a new folder</div>
-                    <div id="tp-newdoc" style="color:#003399;cursor:pointer;">📄 Create text document</div>
-                </div>
-            </div>
-            <div style="background:#ffffff;border-radius:0.25rem;overflow:hidden;color:#000000;">
-                <div style="background:linear-gradient(90deg, #0054e3 0%, #3f8cf3 100%);color:#ffffff;padding:0.25rem 0.5rem;font-weight:bold;">Other Places</div>
-                <div style="padding:0.375rem;display:flex;flex-direction:column;gap:0.25rem;font-size:0.6875rem;">
-                    <div id="tp-desktop" style="color:#003399;cursor:pointer;">🖥 Desktop</div>
-                    <div id="tp-docs" style="color:#003399;cursor:pointer;">📂 My Documents</div>
-                    <div id="tp-comp" style="color:#003399;cursor:pointer;">💻 My Computer</div>
-                </div>
-            </div>
-        `;
+        taskPane.innerHTML = '';
 
-        taskPane.querySelector('#tp-newfolder')?.addEventListener('click', () => {
-            VFS.mkdir(`${getPath()}/New Folder`);
-            renderContents(getPath());
+        const fileFolderExp = ExtraX.createExpando({
+            id: 'file_tasks',
+            title: 'File and Folder Tasks',
+            items: [
+                {
+                    id: 'new_folder',
+                    text: 'Make a new folder',
+                    icon: 'https://img.icons8.com/color/16/000000/folder-invoices.png',
+                    action: () => {
+                        VFS.mkdir(`${getPath()}/New Folder`);
+                        renderContents(getPath());
+                    }
+                },
+                {
+                    id: 'new_doc',
+                    text: 'Create text document',
+                    icon: 'https://img.icons8.com/color/16/000000/notepad.png',
+                    action: () => {
+                        VFS.writeFile(`${getPath()}/New Document.txt`, '');
+                        renderContents(getPath());
+                    }
+                }
+            ]
         });
-        taskPane.querySelector('#tp-newdoc')?.addEventListener('click', () => {
-            VFS.writeFile(`${getPath()}/New Document.txt`, '');
-            renderContents(getPath());
+
+        const otherPlacesExp = ExtraX.createExpando({
+            id: 'other_places',
+            title: 'Other Places',
+            isSecondary: true,
+            items: [
+                {
+                    id: 'op_desktop',
+                    text: 'Desktop',
+                    icon: 'https://img.icons8.com/color/16/000000/monitor.png',
+                    action: () => navigateTo('C:/Desktop')
+                },
+                {
+                    id: 'op_docs',
+                    text: 'My Documents',
+                    icon: 'https://img.icons8.com/color/16/000000/folder-invoices.png',
+                    action: () => navigateTo('C:/Documents')
+                },
+                {
+                    id: 'op_comp',
+                    text: 'My Computer',
+                    icon: 'https://img.icons8.com/color/16/000000/workstation.png',
+                    action: () => navigateTo('C:')
+                },
+                {
+                    id: 'op_cp',
+                    text: 'Control Panel',
+                    icon: 'https://img.icons8.com/color/16/000000/control-panel.png',
+                    action: () => XP_API.exec('control')
+                }
+            ]
         });
-        taskPane.querySelector('#tp-desktop')?.addEventListener('click', () => navigateTo('C:/Desktop'));
-        taskPane.querySelector('#tp-docs')?.addEventListener('click', () => navigateTo('C:/Documents'));
-        taskPane.querySelector('#tp-comp')?.addEventListener('click', () => navigateTo('C:'));
+
+        const detailsExp = ExtraX.createExpando({
+            id: 'details',
+            title: 'Details',
+            isSecondary: true,
+            items: [
+                {
+                    id: 'det_folder',
+                    text: getPath() === 'C:' ? 'System Drive (C:)' : getPath().split('/').pop() || 'Folder',
+                    icon: 'https://img.icons8.com/color/16/000000/folder-invoices.png'
+                },
+                {
+                    id: 'det_type',
+                    text: 'File Folder'
+                }
+            ]
+        });
+
+        taskPane.appendChild(fileFolderExp);
+        taskPane.appendChild(otherPlacesExp);
+        taskPane.appendChild(detailsExp);
     };
 
     renderTaskPane();

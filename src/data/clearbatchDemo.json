@@ -1,10 +1,10 @@
 {
   "type": "ClearBatchApp",
-  "version": "2.0",
+  "version": "2.1",
   "meta": {
     "name": "ClearBatch System Diagnostics & Benchmark Suite",
-    "author": "Retro Computing Lab",
-    "description": "Native Win32 JSON-driven user interface and batch processing engine."
+    "author": "Samsoft Corporation",
+    "description": "Native Win32 JSON-driven user interface and batch processing engine for Samsoft FXP OS."
   },
   "window": {
     "title": "ClearBatch System Diagnostics & Automation Suite",
@@ -25,7 +25,7 @@
     "cpuScore": "Pending test...",
     "memoryScore": "Pending test...",
     "diskScore": "Pending test...",
-    "statusMessage": "ClearBatch v2.0 runtime ready on ${$OS}. Select an automated task or benchmark."
+    "statusMessage": "ClearBatch v2.1 runtime ready on ${$OS} (the current HUGE update \":)\"). Select an automated task or benchmark."
   },
   "menu": [
     {
@@ -220,7 +220,7 @@
   "statusBar": {
     "panels": [
       { "bind": "${statusMessage}", "flexGrow": true },
-      { "text": "ClearBatch v2.0 Engine", "width": "12rem" }
+      { "text": "ClearBatch v2.1 Engine", "width": "12rem" }
     ]
   },
   "actions": {
@@ -229,7 +229,7 @@
         "task": "dialog",
         "dialogType": "about",
         "title": "About ClearBatch",
-        "message": "ClearBatch Declarative UI & Automation Engine\nVersion 2.0 (Build 2600)\nRuns native Windows XP Win32 controls from pure JSON definitions."
+        "message": "ClearBatch Declarative UI & Automation Engine\nSamsoft FXP OS 2.1 (the current HUGE update \":)\")\nRuns native Win32 controls from pure JSON definitions."
       }
     ],
     "resetScores": [

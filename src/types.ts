@@ -64,6 +64,8 @@ export interface AppInstance {
     title: string;
     width: number;
     height: number;
+    minWidth?: number;
+    minHeight?: number;
     x: number;
     y: number;
     isDialog: boolean;
@@ -87,6 +89,8 @@ export interface WindowOptions {
     title?: string;
     width?: number;
     height?: number;
+    minWidth?: number;
+    minHeight?: number;
     content?: string | HTMLElement | FCCFComponent;
     onClose?: () => void;
     resizable?: boolean;
@@ -96,6 +100,7 @@ export interface WindowOptions {
     x?: number;
     y?: number;
     icon?: string;
+    layer?: 'user' | 'admin';
 }
 
 export interface MenuItem {
@@ -498,6 +503,8 @@ export interface IRegistry {
     exists(path: string): boolean;
     keys(path: string): string[];
     getKeys(path: string): string[];
+    getSubKeys(path: string): string[];
+    getValues(path: string): Record<string, unknown>;
     observe<T = unknown>(path: string, callback: (newVal: T) => void): () => void;
     getAll(): Record<string, unknown>;
     dump<T = Record<string, unknown>>(): T;
@@ -530,6 +537,7 @@ export interface IKernel {
     getSCT<T = Record<string, unknown>>(): T;
     setSCT<T = Record<string, unknown>>(data: T): void;
     showDialog(options: DialogOptions): AppInstance | null;
+    showAboutDialog(appName?: string, customDetails?: string): AppInstance | null;
     showFileDialog(options: FileDialogOptions): AppInstance | null;
     showContextMenu(x: number, y: number, items: MenuItem[]): void;
     showTooltip(el: HTMLElement, options: { text: string; delay?: number }): void;

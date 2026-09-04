@@ -19,7 +19,7 @@
           "Control Panel.lnk": { "type": "file", "content": "{\"app\":\"control\",\"args\":\"\"}", "isLink": true },
           "ReadMe.txt": {
             "type": "file",
-            "content": "Welcome to Windows XP!\n\nThis system features a full Win32 component framework, virtual filesystem, registry, and application execution environment.\n\nEnjoy the classic experience!",
+            "content": "Welcome to Samsoft FXP OS 2.1!\n\nThis system features a full Win32 component framework, virtual filesystem, registry, and application execution environment.\n\nEnjoy the classic experience!",
             "metadata": { "owner": "Administrator", "permissions": "644" }
           },
           "Virus.exe": {
@@ -51,7 +51,7 @@
         "children": {
           "readme.txt": {
             "type": "file",
-            "content": "Welcome to Windows XP Documents!\n\nYou can create, edit, save and organize your documents here.\nAll applications integrate directly with this Virtual File System and Registry."
+            "content": "Welcome to Samsoft FXP OS 2.1 Documents!\n\nYou can create, edit, save and organize your documents here.\nAll applications integrate directly with this Virtual File System and Registry."
           },
           "Todo.txt": {
             "type": "file",
@@ -59,11 +59,11 @@
           },
           "Diagnostics.cb": {
             "type": "file",
-            "content": "{\n  \"type\": \"ClearBatchApp\",\n  \"version\": \"1.0\",\n  \"meta\": {\n    \"name\": \"Quick System Health Check\",\n    \"author\": \"Microsoft Corporation\",\n    \"description\": \"Automated declarative diagnostics for Windows XP\"\n  },\n  \"window\": {\n    \"title\": \"Quick System Health Check\",\n    \"width\": 480,\n    \"height\": 380\n  },\n  \"initialState\": {\n    \"vfsStatus\": \"Optimal\",\n    \"regStatus\": \"Synchronized\",\n    \"secStatus\": \"Protected\",\n    \"score\": 100\n  },\n  \"sections\": [\n    {\n      \"title\": \"Automated Diagnostic\",\n      \"controls\": [\n        {\n          \"type\": \"summary\",\n          \"items\": [\n            { \"label\": \"VFS Integrity\", \"value\": \"${vfsStatus}\" },\n            { \"label\": \"ADR Runtime\", \"value\": \"${regStatus}\" },\n            { \"label\": \"Security Center\", \"value\": \"${secStatus}\" }\n          ]\n        },\n        {\n          \"type\": \"progress\",\n          \"label\": \"Overall System Reliability\",\n          \"value\": 100\n        },\n        {\n          \"type\": \"button\",\n          \"label\": \"Run Diagnostics Suite\",\n          \"action\": \"runBenchmark\"\n        }\n      ]\n    }\n  ]\n}"
+            "content": "{\n  \"type\": \"ClearBatchApp\",\n  \"version\": \"2.1\",\n  \"meta\": {\n    \"name\": \"Quick System Health Check\",\n    \"author\": \"Samsoft Corporation\",\n    \"description\": \"Automated declarative diagnostics for Samsoft FXP OS 2.1\"\n  },\n  \"window\": {\n    \"title\": \"Quick System Health Check\",\n    \"width\": 480,\n    \"height\": 380\n  },\n  \"initialState\": {\n    \"vfsStatus\": \"Optimal\",\n    \"regStatus\": \"Synchronized\",\n    \"secStatus\": \"Protected\",\n    \"score\": 100\n  },\n  \"sections\": [\n    {\n      \"title\": \"Automated Diagnostic\",\n      \"controls\": [\n        {\n          \"type\": \"summary\",\n          \"items\": [\n            { \"label\": \"VFS Integrity\", \"value\": \"${vfsStatus}\" },\n            { \"label\": \"ADR Runtime\", \"value\": \"${regStatus}\" },\n            { \"label\": \"Security Center\", \"value\": \"${secStatus}\" }\n          ]\n        },\n        {\n          \"type\": \"progress\",\n          \"label\": \"Overall System Reliability\",\n          \"value\": 100\n        },\n        {\n          \"type\": \"button\",\n          \"label\": \"Run Diagnostics Suite\",\n          \"action\": \"runBenchmark\"\n        }\n      ]\n    }\n  ]\n}"
           },
           "RegistryBackup.reg": {
             "type": "file",
-            "content": "Windows Registry Editor Version 5.00\n\n[HKEY_LOCAL_MACHINE\\System]\n\"Version\"=\"5.1.2600\"\n\"Theme\"=\"Luna\"\n\"ComputerName\"=\"XP-RETRO-PC\"\n"
+            "content": "Windows Registry Editor Version 5.00\n\n[HKEY_LOCAL_MACHINE\\System]\n\"Version\"=\"2.1\"\n\"Theme\"=\"Luna\"\n\"ComputerName\"=\"SAMSOFT-FXP-PC\"\n"
           },
           "virus_test.exe": {
             "type": "file",

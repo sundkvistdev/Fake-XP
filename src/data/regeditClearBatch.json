@@ -1,10 +1,10 @@
 {
   "type": "ClearBatchApp",
-  "version": "2.0",
+  "version": "2.1",
   "meta": {
     "name": "Registry Editor",
-    "author": "Microsoft Corporation / ClearBatch Runtime",
-    "description": "System Configuration & Registry Manager with Lazy-Loaded TreeView"
+    "author": "Samsoft Corporation / ClearBatch Runtime",
+    "description": "System Configuration & Registry Manager with Lazy-Loaded TreeView for Samsoft FXP OS"
   },
   "window": {
     "title": "Registry Editor",

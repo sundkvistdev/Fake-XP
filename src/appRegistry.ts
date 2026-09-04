@@ -17,6 +17,7 @@ import securityCenter from '../apps/securityCenter';
 import dateTimeProperties from '../apps/dateTimeProperties';
 import systemProperties from '../apps/systemProperties';
 import appManagement from '../apps/appManagement';
+import adminManager from '../apps/adminManager';
 
 export type AppRunner = (args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) => void;
 
@@ -38,5 +39,30 @@ export const AppRegistry: { [key: string]: AppRunner } = {
     securityCenter,
     dateTimeProperties,
     systemProperties,
-    appManagement
+    appManagement,
+    adminManager,
+    // Aliases
+    display: displayProperties,
+    'desk.cpl': displayProperties,
+    desk: displayProperties,
+    wscui: securityCenter,
+    'wscui.cpl': securityCenter,
+    security: securityCenter,
+    appwiz: appManagement,
+    'appwiz.cpl': appManagement,
+    nusrmgr: userAccounts,
+    'nusrmgr.cpl': userAccounts,
+    users: userAccounts,
+    sysdm: systemProperties,
+    'sysdm.cpl': systemProperties,
+    system: systemProperties,
+    timedate: dateTimeProperties,
+    'timedate.cpl': dateTimeProperties,
+    admin: adminManager,
+    secpol: adminManager,
+    'secpol.msc': adminManager,
+    compmgmt: adminManager,
+    'compmgmt.msc': adminManager,
+    services: adminManager,
+    'services.msc': adminManager
 };

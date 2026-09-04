@@ -347,7 +347,9 @@ export class CentralComponentFramework implements IFCCF {
                 ...options.style
             });
 
+            let currentItems: MenuItem[] = options.items || [];
             const renderItems = (items: MenuItem[]) => {
+                currentItems = items;
                 menu.innerHTML = '';
                 items.forEach(item => {
                     if (item.separator) {
@@ -393,14 +395,18 @@ export class CentralComponentFramework implements IFCCF {
                     }
 
                     if (!item.disabled) {
-                        const actionToRun = item.onClick || item.action;
-                        if (actionToRun) {
-                            el.onclick = (e) => {
-                                e.stopPropagation();
+                        el.onclick = (e) => {
+                            e.stopPropagation();
+                            if (typeof item.checked === 'boolean') {
+                                item.checked = !item.checked;
+                                icon.innerText = item.checked ? '✓' : '';
+                            }
+                            const actionToRun = item.onClick || item.action;
+                            if (actionToRun) {
                                 actionToRun();
-                                menu.style.display = 'none';
-                            };
-                        }
+                            }
+                            menu.style.display = 'none';
+                        };
                     }
                     
                     menu.appendChild(el);
@@ -410,6 +416,7 @@ export class CentralComponentFramework implements IFCCF {
             if (options.items) renderItems(options.items);
             
             const show = (x: number, y: number) => {
+                renderItems(currentItems);
                 menu.style.left = x + 'px';
                 menu.style.top = y + 'px';
                 menu.style.display = 'block';
@@ -638,6 +645,16 @@ export class CentralComponentFramework implements IFCCF {
             const grip = document.createElement('div');
             grip.className = 'statusbar-resize-grip';
             grip.title = 'Resize window';
+
+            // Auto-hide any duplicate window-level resize handle when status bar is mounted
+            setTimeout(() => {
+                const winEl = bar.closest('.window') as HTMLElement;
+                if (winEl) {
+                    const winGrip = winEl.querySelector('.window-resize-handle') as HTMLElement;
+                    if (winGrip) winGrip.style.display = 'none';
+                }
+            }, 50);
+
             grip.onpointerdown = (e: PointerEvent) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -654,9 +671,9 @@ export class CentralComponentFramework implements IFCCF {
                 const startY = e.clientY;
 
                 const onPointerMove = (moveEvent: PointerEvent) => {
-                    const isDialog = winEl.classList.contains('dialog');
-                    const minW = isDialog ? 320 : 200;
-                    const minH = isDialog ? 150 : 120;
+                    const isDialog = winEl.classList.contains('dialog') || winEl.classList.contains('is-dialog');
+                    const minW = isDialog ? 360 : 340;
+                    const minH = isDialog ? 165 : 220;
                     winEl.style.width = Math.max(minW, startWidth + (moveEvent.clientX - startX)) + 'px';
                     winEl.style.height = Math.max(minH, startHeight + (moveEvent.clientY - startY)) + 'px';
                 };

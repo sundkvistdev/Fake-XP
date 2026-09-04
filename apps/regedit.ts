@@ -112,11 +112,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 {
                     text: 'About Registry Editor',
                     onClick: () => {
-                        XP_API.showDialog({
-                            type: 'about',
-                            title: 'About Registry Editor',
-                            message: 'Microsoft Windows XP Professional\nClearBatch Registry Editor v2.0\nSystemCT Registry Engine with Lazy-Loaded Tree Hierarchy'
-                        });
+                        XP_API.showAboutDialog('Registry Editor', 'System Configuration & Registry Architecture with Lazy-Loaded Tree Hierarchy');
                     }
                 }
             ]
@@ -216,11 +212,12 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         name: string,
         logicalPath: string,
         parentEl: HTMLElement,
-        isRoot = false
+        isRoot = false,
+        depth = 0
     ) => {
         const nodeRow = document.createElement('div');
-        nodeRow.className = 'fccf-tree-node';
-        nodeRow.style.paddingLeft = '0.25rem';
+        nodeRow.className = 'extrax-tree-node fccf-tree-node';
+        nodeRow.style.paddingLeft = `${depth * 1.25 + 0.25}rem`;
         nodeRow.style.display = 'flex';
         nodeRow.style.alignItems = 'center';
         nodeRow.style.gap = '0.25rem';
@@ -261,10 +258,15 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             expanded = !expanded;
             expander.innerText = expanded ? '-' : '+';
             subContainer.style.display = expanded ? 'block' : 'none';
+            if (!isRoot) {
+                icon.src = expanded
+                    ? 'https://img.icons8.com/color/16/000000/opened-folder.png'
+                    : 'https://img.icons8.com/color/16/000000/folder-invoices.png';
+            }
 
             if (expanded && !loaded) {
                 loaded = true;
-                lazyLoadChildren(logicalPath, subContainer);
+                lazyLoadChildren(logicalPath, subContainer, depth);
             }
         };
 
@@ -274,7 +276,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         };
 
         nodeRow.onclick = () => {
-            treePane.querySelectorAll('.fccf-tree-node').forEach(el => el.classList.remove('selected'));
+            treePane.querySelectorAll('.extrax-tree-node, .fccf-tree-node').forEach(el => el.classList.remove('selected'));
             nodeRow.classList.add('selected');
 
             state.selectedKeyPath = logicalPath;
@@ -287,7 +289,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         return { nodeRow, subContainer, toggleExpand };
     };
 
-    const lazyLoadChildren = (parentPath: string, container: HTMLElement) => {
+    const lazyLoadChildren = (parentPath: string, container: HTMLElement, parentDepth = 0) => {
         container.innerHTML = '';
 
         if (parentPath === '') {
@@ -300,7 +302,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 'HKEY_CURRENT_CONFIG'
             ];
             hives.forEach(h => {
-                renderTreeNode(h, h, container);
+                renderTreeNode(h, h, container, false, parentDepth + 1);
             });
             return;
         }
@@ -313,10 +315,10 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             registryLookup = '';
         }
 
-        const subKeys = XP_API.Registry.getKeys(registryLookup);
+        const subKeys = XP_API.Registry.getSubKeys ? XP_API.Registry.getSubKeys(registryLookup) : XP_API.Registry.getKeys(registryLookup);
         if (subKeys.length === 0) {
             const noSub = document.createElement('div');
-            noSub.style.paddingLeft = '1.25rem';
+            noSub.style.paddingLeft = `${(parentDepth + 1) * 1.25 + 0.5}rem`;
             noSub.style.fontSize = '0.75rem';
             noSub.style.color = '#888888';
             noSub.innerText = '(Empty)';
@@ -326,7 +328,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
 
         subKeys.forEach(k => {
             const childLogicalPath = parentPath === 'HKEY_LOCAL_MACHINE' ? `HKEY_LOCAL_MACHINE/${k}` : `${parentPath}/${k}`;
-            renderTreeNode(k, childLogicalPath, container);
+            renderTreeNode(k, childLogicalPath, container, false, parentDepth + 1);
         });
     };
 

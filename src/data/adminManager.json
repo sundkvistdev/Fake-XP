@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "name": "Administrative Manager",
+    "author": "Samsoft Corporation",
+    "version": "2.1",
+    "description": "Comprehensive MMC-style administrative configuration console for Samsoft FXP OS 2.1"
+  },
+  "window": {
+    "title": "Administrative Manager - Computer Management",
+    "width": 800,
+    "height": 560,
+    "minWidth": 600,
+    "minHeight": 420,
+    "icon": "https://img.icons8.com/color/48/000000/administrative-tools.png"
+  },
+  "categories": [
+    {
+      "id": "services",
+      "name": "System Services",
+      "desc": "Manage background system daemons, core drivers, and RPC endpoints.",
+      "icon": "https://img.icons8.com/color/48/000000/service.png"
+    },
+    {
+      "id": "policies",
+      "name": "Local Security Policies",
+      "desc": "Configure access control enforcement, UAC behavior, and password requirements.",
+      "icon": "https://img.icons8.com/color/48/000000/security-configuration.png"
+    },
+    {
+      "id": "audit",
+      "name": "Security & Event Viewer",
+      "desc": "Review system audit trails, logon history, and privilege escalation events.",
+      "icon": "https://img.icons8.com/color/48/000000/event-log.png"
+    },
+    {
+      "id": "users",
+      "name": "User Groups & Roles",
+      "desc": "Inspect RBAC permissions, role definitions, and elevated accounts.",
+      "icon": "https://img.icons8.com/color/48/000000/user-group-man-man.png"
+    },
+    {
+      "id": "clearbatch",
+      "name": "Automated Maintenance",
+      "desc": "Execute declarative ClearBatch administrative scripts and diagnostics.",
+      "icon": "https://img.icons8.com/color/48/000000/processor.png"
+    }
+  ],
+  "services": [
+    { "name": "Access Control Layer Daemon", "status": "Running", "startup": "Automatic", "description": "Enforces user credential validation and API call authorization" },
+    { "name": "ExtraX Shell Manager", "status": "Running", "startup": "Automatic", "description": "Provides graphical task pane, expando containers, and shell views" },
+    { "name": "ClearBatch Declarative Engine", "status": "Running", "startup": "Automatic", "description": "Interprets JSON application definitions and UI interpolation" },
+    { "name": "VFS Persistent Journaling", "status": "Running", "startup": "Automatic", "description": "Monitors in-memory and local storage virtual drive health" },
+    { "name": "Samsoft Security Center", "status": "Running", "startup": "Automatic", "description": "Supervises system shield status, updates, and threat detection" },
+    { "name": "Remote Desktop Server", "status": "Manual", "startup": "Manual", "description": "Allows external authenticated clients to access the desktop" }
+  ],
+  "policies": [
+    { "policy": "Enforce User Account Control (UAC)", "setting": "Enabled", "desc": "Prompt for elevation before administrative tools launch" },
+    { "policy": "Guest Account Modification Restrictions", "setting": "Strict", "desc": "Prevent Guest account from altering system files or registry" },
+    { "policy": "Minimum Password Length", "setting": "0 Characters (Home Mode)", "desc": "Sets the minimum character length required for user passwords" },
+    { "policy": "Audit Privilege Use", "setting": "Success and Failure", "desc": "Record whenever a user account exercises elevated permissions" },
+    { "policy": "Virtual File System Isolation", "setting": "Enabled", "desc": "Isolate system directories (C:/System, C:/Windows) from unauthorized writes" }
+  ],
+  "auditEvents": [
+    { "id": "4624", "level": "Information", "source": "Security-Auth", "time": "2026-09-04 05:01:12", "desc": "Successful logon by user: Sam (Elevated)" },
+    { "id": "4672", "level": "Information", "source": "AccessControl", "time": "2026-09-04 05:01:15", "desc": "Special privileges assigned to new logon session" },
+    { "id": "7036", "level": "Information", "source": "ServiceControl", "time": "2026-09-04 05:01:20", "desc": "The ClearBatch Declarative Engine entered running state" },
+    { "id": "4688", "level": "Information", "source": "ProcessCreate", "time": "2026-09-04 05:02:00", "desc": "New process created: control.exe / ExtraX Control Panel" }
+  ],
+  "batchTasks": [
+    {
+      "id": "auditPolicies",
+      "title": "Run Security & ACL Audit",
+      "desc": "Scan all VFS files and Registry hives against current ACL security descriptors."
+    },
+    {
+      "id": "flushCache",
+      "title": "Flush Registry & VFS Cache",
+      "desc": "Synchronize all dirty memory buffers to sysconf.json and virtual storage."
+    },
+    {
+      "id": "restartServices",
+      "title": "Cycle Core Services",
+      "desc": "Gracefully reload Access Control Layer and ClearBatch daemon without session interruption."
+    }
+  ]
+}

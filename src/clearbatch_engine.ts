@@ -1,4 +1,5 @@
 import { IFCCF, IKernel, IVirtualFileSystem, FCCFComponent, AppInstance, TreeNode } from './types';
+import systemInfo from './data/systemInfo.json';
 
 export interface IClearBatchTask {
     task: 'set' | 'interpolate' | 'calc' | 'delay' | 'dialog' | 'vfsList' | 'vfsRead' | 'vfsWrite' | 'vfsDelete' | 'registryGet' | 'registrySet' | 'exec' | 'log' | 'closeWindow' | 'if';
@@ -132,8 +133,29 @@ export function interpolateString(template: string, state: Record<string, unknow
         if (expression === '$DATE') {
             return new Date().toLocaleDateString();
         }
+        if (expression === '$COMPANY') {
+            return systemInfo.company;
+        }
+        if (expression === '$PRODUCT') {
+            return systemInfo.product;
+        }
+        if (expression === '$VERSION') {
+            return systemInfo.version;
+        }
+        if (expression === '$TAGLINE') {
+            return systemInfo.tagline;
+        }
+        if (expression === '$BUILD') {
+            return systemInfo.build;
+        }
+        if (expression === '$EDITION') {
+            return systemInfo.edition;
+        }
+        if (expression === '$COPYRIGHT') {
+            return systemInfo.copyright;
+        }
         if (expression === '$OS') {
-            return 'Microsoft Windows XP Professional';
+            return `${systemInfo.company} ${systemInfo.product} ${systemInfo.version}`;
         }
 
         // Support fallback syntax: ${key || 'default'}
@@ -668,10 +690,10 @@ export function renderClearBatchApp(
                             padding: '0.25rem'
                         });
 
-                        const renderTreeNode = (nodeText: string, nodePath: string, parentEl: HTMLElement, hasChildren = true) => {
+                        const renderTreeNode = (nodeText: string, nodePath: string, parentEl: HTMLElement, hasChildren = true, depth = 0) => {
                             const nodeRow = document.createElement('div');
                             nodeRow.className = 'fccf-tree-node';
-                            nodeRow.style.paddingLeft = '0.25rem';
+                            nodeRow.style.paddingLeft = `${depth * 1.25 + 0.25}rem`;
                             nodeRow.style.display = 'flex';
                             nodeRow.style.alignItems = 'center';
                             nodeRow.style.gap = '0.25rem';
@@ -719,7 +741,7 @@ export function renderClearBatchApp(
                                     } else {
                                         subKeys.forEach(k => {
                                             const childPath = nodePath ? `${nodePath}/${k}` : k;
-                                            renderTreeNode(k, childPath, subContainer);
+                                            renderTreeNode(k, childPath, subContainer, true, depth + 1);
                                         });
                                     }
                                 }

@@ -61,12 +61,47 @@ function systemBoot() {
     }
 }
 
+function showShutdownScreen() {
+    let shutEl = document.getElementById('shutdown-screen');
+    if (!shutEl) {
+        shutEl = document.createElement('div');
+        shutEl.id = 'shutdown-screen';
+        Object.assign(shutEl.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100vw',
+            height: '100vh',
+            background: '#000000',
+            color: '#ffffff',
+            zIndex: '300000',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '1.5rem',
+            fontFamily: 'Tahoma, sans-serif'
+        });
+        shutEl.innerHTML = `
+            <div style="font-size:1.5rem;color:#ff9900;font-weight:bold;">Samsoft FXP OS 2.1</div>
+            <div style="font-size:1.125rem;">It is now safe to turn off your computer.</div>
+            <button id="btn-restart-pc" class="xp-button" style="padding:0.375rem 1.25rem;cursor:pointer;background:#ece9d8;color:#000;">Turn On / Restart</button>
+        `;
+        document.body.appendChild(shutEl);
+        shutEl.querySelector<HTMLButtonElement>('#btn-restart-pc')!.onclick = () => {
+            shutEl?.remove();
+            showLogonScreen();
+        };
+    }
+}
+
 function showLogonScreen() {
     const desktop = document.getElementById('desktop');
     if (!desktop) return;
 
     // Check if logon screen already exists
-    if (document.getElementById('logon-screen')) return;
+    const existingLogon = document.getElementById('logon-screen');
+    if (existingLogon) existingLogon.remove();
 
     const logon = document.createElement('div');
     logon.id = 'logon-screen';
@@ -99,7 +134,8 @@ function showLogonScreen() {
 
     const left = document.createElement('div');
     left.style.textAlign = 'right';
-    left.innerHTML = '<div style="font-size:36px;color:white;font-weight:bold;font-family:Tahoma;">Windows <span style="color:#ff9900;">XP</span></div>' +
+    left.innerHTML = '<div style="font-size:36px;color:white;font-weight:bold;font-family:Tahoma;">Samsoft <span style="color:#ff9900;">FXP OS</span></div>' +
+                     '<div style="color:#d0d0d0;font-size:14px;font-family:Tahoma;margin-bottom:8px;">Version 2.1 Professional</div>' +
                      '<div style="color:white;font-size:14px;opacity:0.8;font-family:Tahoma;">To begin, click your user name</div>';
     middle.appendChild(left);
 
@@ -313,7 +349,8 @@ function showLogonScreen() {
         
         overlay.querySelector<HTMLElement>('#btn-cancel')!.onclick = () => { overlay.remove(); };
         overlay.querySelector<HTMLElement>('#btn-off')!.onclick = () => {
-            document.body.innerHTML = '<div style="background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;font-family:Tahoma;">It is now safe to turn off your computer.</div>';
+            overlay.remove();
+            showShutdownScreen();
         };
     };
 
@@ -321,6 +358,9 @@ function showLogonScreen() {
     logon.appendChild(bottom);
     document.body.appendChild(logon);
 }
+
+// Expose showLogonScreen to window for kernel Auth.logout
+(window as unknown as { showLogonScreen: () => void }).showLogonScreen = showLogonScreen;
 
 function initDesktop() {
     const currentUser = kernel.Auth.getCurrentUser();
@@ -567,14 +607,24 @@ function initDesktop() {
             kernel.showDialog({ 
                 type: 'confirm', 
                 message: 'Are you sure you want to log off?', 
-                onOk: () => { kernel.Auth.logout(); } 
+                onOk: () => { 
+                    const startMenu = document.getElementById('start-menu');
+                    startMenu?.classList.remove('open');
+                    kernel.Auth.logout(); 
+                } 
             }); 
         };
         footerBtns[1].onclick = () => { 
             kernel.showDialog({ 
                 type: 'confirm', 
                 message: 'Turn off computer?', 
-                onOk: () => { document.body.innerHTML = '<div style="background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;font-family:Tahoma;">It is now safe to turn off your computer.</div>'; } 
+                onOk: () => { 
+                    const startMenu = document.getElementById('start-menu');
+                    startMenu?.classList.remove('open');
+                    // Close all windows
+                    kernel.WindowManager.getAll().forEach(w => w.close());
+                    showShutdownScreen();
+                } 
             }); 
         };
     }

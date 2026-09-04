@@ -1,20 +1,20 @@
 {
   "system": {
-    "osName": "Microsoft Windows XP",
-    "edition": "Professional",
-    "version": "Version 5.1 (Build 2600.xpsp_sp4)",
-    "servicePack": "Service Pack 4 (Community Update)",
-    "registeredTo": "Administrator",
-    "organization": "Retro Computing Systems Corp.",
-    "productKey": "FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8"
+    "osName": "Samsoft FXP OS",
+    "edition": "Professional Edition",
+    "version": "Version 2.1 (the current HUGE update \":)\")",
+    "servicePack": "Service Pack 2 (Build 2600.fxp_sp2_samsoft_v2.1)",
+    "registeredTo": "Sam",
+    "organization": "Samsoft Corporation",
+    "productKey": "FXP21-SAMSOFT-HUGE-UPDATE-2026"
   },
   "computer": {
     "processor": "Intel(R) Pentium(R) 4 CPU 3.20GHz",
     "memory": "2.00 GB of RAM",
     "systemType": "AT/AT COMPATIBLE",
-    "computerName": "XP-RETRO-PC",
+    "computerName": "SAMSOFT-FXP-PC",
     "workgroup": "WORKGROUP",
-    "description": "Retro Windows XP Workstation"
+    "description": "Samsoft FXP OS 2.1 Workstation"
   },
   "hardwareDevices": [
     { "category": "Computer", "name": "ACPI Multiprocessor PC" },

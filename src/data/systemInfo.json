@@ -1,0 +1,14 @@
+{
+  "company": "Samsoft",
+  "product": "FXP OS",
+  "version": "2.1",
+  "tagline": "The current HUGE update :)",
+  "build": "2600.fxp_sp2_samsoft_v2.1",
+  "edition": "Professional Edition",
+  "fullProductName": "Samsoft FXP OS 2.1",
+  "copyright": "Copyright (C) 1985-2026 Samsoft Corporation. All rights reserved.",
+  "supportUrl": "https://samsoft.local/support",
+  "kernelVersion": "FXP-NT 5.1.2600",
+  "registeredOwner": "Sam",
+  "registeredOrganization": "Samsoft Corp"
+}

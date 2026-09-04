@@ -1,0 +1,481 @@
+/* ==========================================================================
+   Samsoft FXP OS 2.0 - ExtraX UI Component System & Environment Isolation
+   ========================================================================== */
+
+/* 1. Environment Layers */
+#base-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 100000;
+    display: none;
+}
+
+#user-layer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    z-index: 1;
+    overflow: hidden;
+}
+
+#admin-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 50000;
+    overflow: hidden;
+}
+
+#admin-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: grayscale(70%) brightness(80%);
+    z-index: 50001;
+}
+
+#admin-windows {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 50002;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 2. Fix duplicate resize grip when status bar is present */
+.window:has(.xp-statusbar) > .window-resize-handle,
+.window:has(.statusbar-resize-grip) > .window-resize-handle {
+    display: none !important;
+}
+
+/* 3. Enforce viable minimum sizes on resizable windows */
+.window {
+    min-width: 340px !important;
+    min-height: 200px !important;
+}
+
+.window.is-dialog {
+    min-width: 360px !important;
+    min-height: 165px !important;
+}
+
+/* 4. ExtraX Shell & Task Pane Layout */
+.extrax-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    background: #ffffff;
+    box-sizing: border-box;
+    overflow: hidden;
+    font-family: Tahoma, 'Segoe UI', sans-serif;
+    font-size: 11px;
+}
+
+.extrax-nav-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: #ece9d8;
+    border-bottom: 1px solid #aca899;
+    flex-shrink: 0;
+}
+
+.extrax-nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 2px;
+    font-size: 11px;
+}
+
+.extrax-nav-btn:hover:not(:disabled) {
+    border-color: #7f9db9;
+    background: #e5f3ff;
+}
+
+.extrax-nav-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.extrax-address-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.5rem;
+    background: #ece9d8;
+    border-bottom: 1px solid #aca899;
+    flex-shrink: 0;
+}
+
+.extrax-address-input {
+    flex: 1;
+    background: #ffffff;
+    border: 1px solid #7f9db9;
+    padding: 0.125rem 0.375rem;
+    font-size: 11px;
+    outline: none;
+}
+
+.extrax-body {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Classic Windows XP Blue Task Pane */
+.extrax-taskpane {
+    width: 13rem;
+    background: linear-gradient(to bottom, #7ba2e7 0%, #6375d6 100%);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    flex-shrink: 0;
+    border-right: 1px solid #aca899;
+    box-sizing: border-box;
+}
+
+.extrax-expando {
+    background: #ffffff;
+    border-radius: 4px 4px 0 0;
+    border: 1px solid #ffffff;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    overflow: hidden;
+}
+
+.extrax-expando-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.5rem;
+    background: linear-gradient(to right, #215dc6 0%, #6392e6 100%);
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 11px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.extrax-expando-header.secondary {
+    background: linear-gradient(to right, #ffffff 0%, #c6d3f7 100%);
+    color: #215dc6;
+}
+
+.extrax-expando-body {
+    padding: 0.5rem;
+    background: #d6dff7;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.extrax-task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: #0c327d;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 11px;
+    user-select: none;
+    padding: 0.125rem;
+    border-radius: 2px;
+}
+
+.extrax-task-item:hover {
+    color: #ff3300;
+    text-decoration: underline;
+}
+
+.extrax-task-icon {
+    width: 1rem;
+    height: 1rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+/* ExtraX Main Content Canvas */
+.extrax-content {
+    flex: 1;
+    background: #ffffff;
+    overflow: auto;
+    padding: 0.75rem;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.extrax-header-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #003399;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Category View */
+.extrax-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.875rem;
+}
+
+.extrax-cat-card {
+    display: flex;
+    gap: 0.625rem;
+    align-items: flex-start;
+    padding: 0.625rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.extrax-cat-card:hover {
+    background: #e5f3ff;
+    border-color: #b8d6fb;
+}
+
+.extrax-cat-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.extrax-cat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.extrax-cat-title {
+    font-weight: bold;
+    color: #003399;
+    font-size: 12px;
+}
+
+.extrax-cat-desc {
+    color: #444444;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+/* Icons / Tiles View */
+.extrax-icons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.875rem;
+    padding: 0.5rem;
+}
+
+.extrax-tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.75rem;
+    padding: 0.5rem;
+}
+
+.extrax-icon-item,
+.extrax-applet-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    background: transparent;
+    user-select: none;
+    outline: none;
+}
+
+.extrax-icons-grid .extrax-applet-item {
+    flex-direction: column;
+    text-align: center;
+    padding: 0.5rem 0.25rem;
+}
+
+.extrax-tiles-grid .extrax-applet-item {
+    flex-direction: row;
+    align-items: flex-start;
+    padding: 0.5rem;
+    border: 1px solid #e0e0e0;
+    background: #ffffff;
+}
+
+.extrax-icon-item:hover,
+.extrax-applet-item:hover {
+    background: #e5f3ff;
+    border-color: #7f9db9;
+}
+
+.extrax-icon-item.selected,
+.extrax-applet-item.selected {
+    background: #0055ea !important;
+    color: #ffffff !important;
+}
+
+.extrax-icon-item.selected span,
+.extrax-applet-item.selected span {
+    color: #ffffff !important;
+}
+
+.extrax-icon-item:focus-visible,
+.extrax-applet-item:focus-visible {
+    outline: 1px dotted #333333;
+}
+
+/* 5. ExtraX Security Center Shields */
+.extrax-sec-hero {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 0.875rem;
+    background: #e8f5e9;
+    border: 1px solid #81c784;
+}
+
+.extrax-sec-hero.risk {
+    background: #ffebee;
+    border-color: #e57373;
+}
+
+.extrax-sec-hero.warning {
+    background: #fffde7;
+    border-color: #fff176;
+}
+
+.extrax-sec-shield-panel {
+    border: 1px solid #aca899;
+    border-radius: 4px;
+    margin-bottom: 0.625rem;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.extrax-sec-shield-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+    cursor: pointer;
+}
+
+.extrax-sec-shield-body {
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.extrax-sec-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 3px;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+.extrax-sec-badge-on {
+    background: #2e7d32;
+    color: #ffffff;
+}
+
+.extrax-sec-badge-off {
+    background: #c62828;
+    color: #ffffff;
+}
+
+/* 6. ExtraX Tree Node Indentation */
+.extrax-tree-node {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 2px;
+}
+
+.extrax-tree-node:hover {
+    background: #e5f3ff;
+}
+
+.extrax-tree-node.selected {
+    background: #0055ea;
+    color: #ffffff;
+}
+
+.extrax-tree-sub {
+    display: flex;
+    flex-direction: column;
+}
+
+/* 7. UAC Security Prompt in Admin Layer */
+.extrax-uac-dialog {
+    width: 440px;
+    background: #ece9d8;
+    border: 2px solid #0055ea;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    border-radius: 4px;
+    overflow: hidden;
+    font-family: Tahoma, sans-serif;
+}
+
+.extrax-uac-header {
+    background: linear-gradient(to right, #0055ea 0%, #3f88f6 100%);
+    color: #ffffff;
+    font-weight: bold;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.extrax-uac-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.extrax-uac-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: #e0ded0;
+    border-top: 1px solid #aca899;
+}

@@ -15,6 +15,8 @@ export class AppWindow implements AppInstance {
     public isMaximized: boolean = false;
     public onClose?: () => void;
     public icon?: string;
+    public minWidth: number;
+    public minHeight: number;
     public prevRect: { width: number; height: number; x: number; y: number } | null = null;
     public element!: HTMLElement;
     public overlay?: HTMLElement;
@@ -26,8 +28,11 @@ export class AppWindow implements AppInstance {
         this.windowManager = windowManager;
         this.id = 'win-' + Math.random().toString(36).substring(2, 11);
         this.title = options.title || 'New Window';
-        this.width = options.width || 400;
-        this.height = options.height || 300;
+        this.isDialog = !!options.isDialog;
+        this.minWidth = options.minWidth || (this.isDialog ? 360 : 340);
+        this.minHeight = options.minHeight || (this.isDialog ? 165 : 220);
+        this.width = Math.max(this.minWidth, options.width || 400);
+        this.height = Math.max(this.minHeight, options.height || 300);
         this.icon = options.icon;
         
         const count = windowManager.getWindowsCount();
@@ -91,6 +96,8 @@ export class AppWindow implements AppInstance {
         win.className = 'window' + (this.isDialog ? ' dialog' : '');
         win.style.width = this.width + 'px';
         win.style.height = this.height + 'px';
+        win.style.minWidth = this.minWidth + 'px';
+        win.style.minHeight = this.minHeight + 'px';
         win.style.left = this.x + 'px';
         win.style.top = this.y + 'px';
 
@@ -184,10 +191,8 @@ export class AppWindow implements AppInstance {
                 const startY = e.clientY;
                 
                 const onPointerMove = (moveEvent: PointerEvent) => {
-                    const minW = this.isDialog ? 320 : 200;
-                    const minH = this.isDialog ? 150 : 120;
-                    this.width = Math.max(minW, startWidth + (moveEvent.clientX - startX));
-                    this.height = Math.max(minH, startHeight + (moveEvent.clientY - startY));
+                    this.width = Math.max(this.minWidth, startWidth + (moveEvent.clientX - startX));
+                    this.height = Math.max(this.minHeight, startHeight + (moveEvent.clientY - startY));
                     win.style.width = this.width + 'px';
                     win.style.height = this.height + 'px';
                 };

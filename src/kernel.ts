@@ -30,10 +30,20 @@ export class Kernel implements IKernel {
             }
             return false;
         },
-        logout: (): void => {
+        logout: (onLogoffComplete?: () => void): void => {
             this.Auth.currentUser = null;
             this.Registry.set('Security/CurrentSession', null);
-            location.reload();
+            // Gracefully close all windows in memory
+            const allWindows = [...this.WindowManager.getAll()];
+            allWindows.forEach(w => w.close());
+            if (onLogoffComplete) {
+                onLogoffComplete();
+            } else {
+                const globalScope = window as unknown as { showLogonScreen?: () => void };
+                if (typeof globalScope.showLogonScreen === 'function') {
+                    globalScope.showLogonScreen();
+                }
+            }
         },
         getCurrentUser: (): User | null => {
             if (!this.Auth.currentUser) {
@@ -212,16 +222,7 @@ export class Kernel implements IKernel {
 
     private readonly LambdaApps: { [key: string]: (args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) => void } = {
         'about': (args, FCCF, XP_API, VFS) => {
-            const content = FCCF.Controls.Pane({
-                style: { padding: '20px', textAlign: 'center' },
-                children: [
-                    FCCF.Controls.Icon({ src: 'https://img.icons8.com/color/48/000000/windows-xp.png', size: '64px' }),
-                    FCCF.Controls.Pane({ style: { fontSize: '18px', fontWeight: 'bold', margin: '10px 0' }, children: [document.createTextNode('Windows XP Retro TypeScript')] }),
-                    FCCF.Controls.Pane({ children: [document.createTextNode('Version 6.0 (Build 3000.ts_esm_no_react : Service Pack 4)')] }),
-                    FCCF.Controls.Pane({ style: { marginTop: '20px' }, children: [document.createTextNode('Copyright © 1985-2026 Retro Systems Corp')] })
-                ]
-            });
-            FCCF.Window({ title: 'About Windows', width: 400, height: 300, content });
+            XP_API.showAboutDialog();
         },
         'shutdown': (args, FCCF, XP_API, VFS) => {
             XP_API.showDialog({
@@ -229,7 +230,11 @@ export class Kernel implements IKernel {
                 title: 'Turn Off Computer',
                 message: 'Are you sure you want to shut down?',
                 onOk: () => {
-                    document.body.innerHTML = '<div style="background:black;color:white;height:100vh;display:flex;align-items:center;justify-content:center;font-family:Tahoma;">It is now safe to turn off your computer.</div>';
+                    XP_API.WindowManager.getAll().forEach(w => w.close());
+                    const globalScope = window as unknown as { showShutdownScreen?: () => void };
+                    if (typeof globalScope.showShutdownScreen === 'function') {
+                        globalScope.showShutdownScreen();
+                    }
                 }
             });
         }
@@ -253,38 +258,122 @@ export class Kernel implements IKernel {
     }
 
     public async exec(path: string, args?: unknown): Promise<boolean> {
-        // Handle .lnk files explicitly
-        if (path.endsWith('.lnk')) {
-            const stat = this.VFS.stat(path);
-            if (stat && stat.isLink && stat.content) {
+        let cleanPath = path.replace(/\\/g, '/');
+
+        // 1. Handle .lnk files explicitly
+        if (cleanPath.endsWith('.lnk')) {
+            let fullLnkPath = cleanPath;
+            if (!fullLnkPath.startsWith('C:') && !fullLnkPath.startsWith('/')) {
+                if (this.VFS.exists(`C:/Desktop/${fullLnkPath}`)) {
+                    fullLnkPath = `C:/Desktop/${fullLnkPath}`;
+                } else if (this.VFS.exists(`C:/StartMenu/${fullLnkPath}`)) {
+                    fullLnkPath = `C:/StartMenu/${fullLnkPath}`;
+                } else {
+                    fullLnkPath = `C:/${fullLnkPath}`;
+                }
+            }
+            const content = this.VFS.readFile(fullLnkPath) || this.VFS.stat(fullLnkPath)?.content;
+            if (content) {
                 try {
-                    const linkData = JSON.parse(stat.content);
-                    return this.exec(linkData.app, [linkData.args]);
+                    const linkData = JSON.parse(content);
+                    if (linkData.app) {
+                        const linkArgs = linkData.args ? [linkData.args] : undefined;
+                        return this.exec(linkData.app, linkArgs);
+                    }
                 } catch (e) {
-                    console.error('Failed to parse link:', path, e);
+                    console.error('Failed to parse link:', fullLnkPath, e);
                 }
             }
         }
 
-        // Handle file associations using Registry / SystemCT
-        if (path.includes('.')) {
-            const ext = path.split('.').pop()!.toLowerCase();
+        // 2. Handle file associations using Registry / SystemCT / default mappings
+        if (cleanPath.includes('.')) {
+            const ext = cleanPath.split('.').pop()!.toLowerCase();
             const sct = this.getSCT<{ Associations?: Record<string, string> }>();
             const regAssoc = this.Registry.get<Record<string, string>>('System/Associations');
-            const associations = regAssoc || sct?.Associations || {};
-            if (associations && associations[ext]) {
+            const defaultAssocs: Record<string, string> = {
+                txt: 'notepad',
+                log: 'notepad',
+                ini: 'notepad',
+                inf: 'notepad',
+                sys: 'notepad',
+                md: 'notepad',
+                bmp: 'paint',
+                png: 'paint',
+                jpg: 'paint',
+                jpeg: 'paint',
+                gif: 'paint',
+                mp3: 'music',
+                wav: 'music',
+                ogg: 'music',
+                cb: 'clearbatch',
+                clrb: 'clearbatch',
+                reg: 'regedit',
+                js: 'ADR',
+                adr: 'ADR',
+                ts: 'ADR',
+                lnk: 'shell'
+            };
+            const associations: Record<string, string> = {
+                ...defaultAssocs,
+                ...(sct?.Associations || {}),
+                ...(regAssoc || {})
+            };
+
+            if (associations[ext]) {
                 const app = associations[ext];
                 if (app === 'ADR') {
-                    await this.loadAppRuntime(path, args);
+                    await this.loadAppRuntime(cleanPath, args);
+                } else if (app === 'clearbatch') {
+                    const fileContent = this.VFS.readFile(cleanPath);
+                    if (fileContent) {
+                        try {
+                            const parsed = JSON.parse(fileContent);
+                            AppRegistry['clearbatch'](parsed, this.FCCF, this, this.VFS);
+                        } catch {
+                            AppRegistry['clearbatch']({ scriptPath: cleanPath }, this.FCCF, this, this.VFS);
+                        }
+                    } else {
+                        AppRegistry['clearbatch']({ scriptPath: cleanPath }, this.FCCF, this, this.VFS);
+                    }
+                } else if (app === 'shell') {
+                    return this.exec('explorer', [cleanPath]);
                 } else {
                     const arrayArgs = Array.isArray(args) ? args as unknown[] : (args ? [args] : []);
-                    await this.loadAppRuntime(app, [path, ...arrayArgs]);
+                    await this.loadAppRuntime(app, [cleanPath, ...arrayArgs]);
                 }
                 return true;
             }
+
+            // If file exists on VFS and has an unassociated extension, do NOT execute random data
+            if (this.VFS.exists(cleanPath)) {
+                if (ext === 'json') {
+                    const jsonContent = this.VFS.readFile(cleanPath);
+                    if (jsonContent) {
+                        try {
+                            const parsed = JSON.parse(jsonContent);
+                            if (parsed.type === 'ClearBatchApp' || parsed.sections || parsed.tabs) {
+                                AppRegistry['clearbatch'](parsed, this.FCCF, this, this.VFS);
+                                return true;
+                            }
+                        } catch {
+                            // fall through
+                        }
+                    }
+                }
+                this.showDialog({
+                    type: 'confirm',
+                    title: 'Open With',
+                    message: `Windows cannot open this file: ${cleanPath}\n\nWould you like to open it with Notepad?`,
+                    onOk: () => {
+                        this.exec('notepad', [cleanPath]);
+                    }
+                });
+                return false;
+            }
         }
         
-        await this.loadAppRuntime(path, args);
+        await this.loadAppRuntime(cleanPath, args);
         return true;
     }
 
@@ -292,6 +381,12 @@ export class Kernel implements IKernel {
         // First check Lambda Apps
         if (this.LambdaApps[appName]) {
             this.LambdaApps[appName](args || {}, this.FCCF, this, this.VFS);
+            return;
+        }
+
+        // Direct AppRegistry lookup first
+        if (AppRegistry[appName]) {
+            AppRegistry[appName](args || {}, this.FCCF, this, this.VFS);
             return;
         }
 
@@ -318,7 +413,7 @@ export class Kernel implements IKernel {
         let scriptText = this.VFS.readFile(fullPath) || this.VFS.readFile(appName);
 
         // Check if file is a ClearBatch JSON file in VFS
-        if (scriptText && (appName.endsWith('.json') || appName.endsWith('.cb') || appName.endsWith('.clrb') || fullPath.endsWith('.json'))) {
+        if (scriptText && (appName.endsWith('.json') || appName.endsWith('.cb') || appName.endsWith('.clrb') || fullPath.endsWith('.json') || scriptText.trim().startsWith('{'))) {
             try {
                 const parsed = JSON.parse(scriptText);
                 if (parsed.type === 'ClearBatchApp' || parsed.sections || parsed.tabs) {
@@ -333,7 +428,6 @@ export class Kernel implements IKernel {
         // 2. If not in VFS, check Origin (fetch from origin server or dynamic import)
         if (!scriptText) {
             try {
-                // Check if there is an ESM TypeScript app we can dynamically import
                 const dynamicPath = `/apps/${sysAppName}.ts`;
                 const appModule = await import(/* @vite-ignore */ dynamicPath);
                 if (appModule && appModule.default) {
@@ -355,7 +449,6 @@ export class Kernel implements IKernel {
                     const res = await fetch(serverUrl);
                     if (res.ok) {
                         scriptText = await res.text();
-                        // Cache into VFS for fast subsequent loads
                         const targetVfsPath = fullPath.startsWith('C:/') ? fullPath : `C:/Apps/${sysAppName}`;
                         this.VFS.writeFile(targetVfsPath, scriptText);
                         fetched = true;
@@ -389,19 +482,28 @@ export class Kernel implements IKernel {
             }
         }
 
+        // Check if file is executable script before passing to new Function
+        const isScript = fullPath.endsWith('.js') || fullPath.endsWith('.ts') || fullPath.endsWith('.adr') || fullPath.startsWith('C:/Apps/');
+        if (!isScript && !appName.startsWith('C:/Apps/')) {
+            this.showDialog({
+                title: 'ADR Error',
+                message: `ADR cannot execute non-script file "${fullPath}".`,
+                type: 'error'
+            });
+            return;
+        }
+
         // Execute JS code runtime
-        if (scriptText) {
-            try {
-                const fn = new Function('args', 'FCCF', 'XP_API', 'VFS', scriptText);
-                fn(args || {}, this.FCCF, this, this.VFS);
-            } catch (e: unknown) {
-                this.showDialog({ 
-                    title: 'ADR Runtime Error', 
-                    message: `Failed to execute ${fullPath}: ${(e as Error).message}`, 
-                    type: 'error' 
-                });
-                console.error('ADR Error:', e);
-            }
+        try {
+            const fn = new Function('args', 'FCCF', 'XP_API', 'VFS', scriptText);
+            fn(args || {}, this.FCCF, this, this.VFS);
+        } catch (e: unknown) {
+            this.showDialog({ 
+                title: 'ADR Runtime Error', 
+                message: `Failed to execute ${fullPath}: ${(e as Error).message}`, 
+                type: 'error' 
+            });
+            console.error('ADR Error:', e);
         }
     }
 
@@ -888,6 +990,23 @@ export class Kernel implements IKernel {
             setTimeout(() => { el.focus(); }, 100);
         }
         return win;
+    }
+
+    public showAboutDialog(appName?: string, customDetails?: string): AppInstance | null {
+        const sct = this.getSCT<{ Version?: string; Branding?: { Company?: string; Product?: string; Version?: string } }>();
+        const company = sct?.Branding?.Company || 'Samsoft';
+        const product = sct?.Branding?.Product || 'FXP OS';
+        const version = sct?.Branding?.Version || sct?.Version || '2.1';
+
+        const displayApp = appName ? `${appName}` : `${company} ${product}`;
+        const details = customDetails || `${company} ${product} Professional\nVersion ${version} (Build 3000.ts_esm : Service Pack 2)\n\nThis product is licensed under the Samsoft End-User License Agreement to:\n  Authorized User\n  ${company} Corporation\n\nPhysical memory available to OS: 523,712 KB`;
+
+        return this.showDialog({
+            type: 'about',
+            title: `About ${displayApp}`,
+            message: `${displayApp}\n${details}`,
+            icon: 'https://img.icons8.com/color/48/000000/windows-xp.png'
+        });
     }
 
     public showFileDialog(options: FileDialogOptions): AppInstance | null {
