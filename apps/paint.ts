@@ -285,10 +285,50 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                             ctx.fillRect(0, 0, canvas.width, canvas.height);
                         }
                     }},
+                    { text: 'Open...', shortcut: 'Ctrl+O', action: () => {
+                        XP_API.showFileDialog({
+                            mode: 'open',
+                            title: 'Open',
+                            initialPath: 'C:/Pictures',
+                            filters: [
+                                { label: 'Picture Files (*.png;*.jpg;*.bmp)', ext: 'png;jpg;bmp' },
+                                { label: 'All Files (*.*)', ext: '*' }
+                            ],
+                            onSelect: (sel) => {
+                                const data = VFS.readFile(sel);
+                                if (data && ctx) {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                        saveUndo();
+                                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                                        ctx.drawImage(img, 0, 0);
+                                    };
+                                    img.src = data;
+                                }
+                            }
+                        });
+                    }},
                     { text: 'Save', shortcut: 'Ctrl+S', action: () => {
                         const dataUrl = canvas.toDataURL('image/png');
                         VFS.writeFile('C:/Pictures/untitled.png', dataUrl);
-                        XP_API.showDialog({ title: 'Paint', message: 'Image successfully saved to C:\\Pictures\\untitled.png', type: 'info' });
+                        XP_API.showDialog({ title: 'Paint', message: 'Image successfully saved to C:/Pictures/untitled.png', type: 'info' });
+                    }},
+                    { text: 'Save As...', action: () => {
+                        XP_API.showFileDialog({
+                            mode: 'save',
+                            title: 'Save As',
+                            initialPath: 'C:/Pictures',
+                            defaultFileName: 'untitled.png',
+                            filters: [
+                                { label: 'PNG Image (*.png)', ext: 'png' },
+                                { label: 'All Files (*.*)', ext: '*' }
+                            ],
+                            onSelect: (savePath) => {
+                                const dataUrl = canvas.toDataURL('image/png');
+                                VFS.writeFile(savePath, dataUrl);
+                                XP_API.showDialog({ title: 'Paint', message: `Image saved to ${savePath}.`, type: 'info' });
+                            }
+                        });
                     }},
                     { separator: true },
                     { text: 'Exit', action: () => XP_API.closeWindow(winId) }

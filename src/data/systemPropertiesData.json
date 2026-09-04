@@ -1,0 +1,35 @@
+{
+  "system": {
+    "osName": "Microsoft Windows XP",
+    "edition": "Professional",
+    "version": "Version 5.1 (Build 2600.xpsp_sp4)",
+    "servicePack": "Service Pack 4 (Community Update)",
+    "registeredTo": "Administrator",
+    "organization": "Retro Computing Systems Corp.",
+    "productKey": "FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8"
+  },
+  "computer": {
+    "processor": "Intel(R) Pentium(R) 4 CPU 3.20GHz",
+    "memory": "2.00 GB of RAM",
+    "systemType": "AT/AT COMPATIBLE",
+    "computerName": "XP-RETRO-PC",
+    "workgroup": "WORKGROUP",
+    "description": "Retro Windows XP Workstation"
+  },
+  "hardwareDevices": [
+    { "category": "Computer", "name": "ACPI Multiprocessor PC" },
+    { "category": "Disk drives", "name": "VFS Virtual IDE Hard Disk (40 GB)" },
+    { "category": "Display adapters", "name": "NVIDIA GeForce4 Ti 4600" },
+    { "category": "DVD/CD-ROM drives", "name": "NEC DVD-RW ND-3500AG" },
+    { "category": "Network adapters", "name": "Intel(R) PRO/1000 MT Desktop Adapter" },
+    { "category": "Sound, video and game controllers", "name": "Creative Sound Blaster Live! 5.1" }
+  ],
+  "programsList": [
+    { "name": "CentralFirm Antivirus 2026", "size": "42.5 MB", "frequency": "Frequently", "date": "Yesterday", "icon": "https://img.icons8.com/color/48/000000/shield.png" },
+    { "name": "Microsoft Office XP Professional", "size": "320.0 MB", "frequency": "Frequently", "date": "2026-09-01", "icon": "https://img.icons8.com/color/48/000000/microsoft.png" },
+    { "name": "ClearBatch Automation Suite", "size": "4.2 MB", "frequency": "Frequently", "date": "Today", "icon": "https://img.icons8.com/color/48/000000/processor.png" },
+    { "name": "Windows Media Player 9", "size": "15.4 MB", "frequency": "Occasionally", "date": "2026-08-20", "icon": "https://img.icons8.com/color/48/000000/speaker.png" },
+    { "name": "Microsoft Plus! for Windows XP", "size": "85.2 MB", "frequency": "Rarely", "date": "2026-07-15", "icon": "https://img.icons8.com/color/48/000000/puzzle.png" },
+    { "name": "3D Pinball for Windows - Space Cadet", "size": "8.1 MB", "frequency": "Occasionally", "date": "2026-08-30", "icon": "https://img.icons8.com/color/48/000000/controller.png" }
+  ]
+}

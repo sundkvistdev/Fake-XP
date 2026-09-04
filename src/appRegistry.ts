@@ -12,6 +12,11 @@ import music from '../apps/music';
 import solitaire from '../apps/solitaire';
 import paint from '../apps/paint';
 import userAccounts from '../apps/userAccounts';
+import clearbatch from '../apps/clearbatch';
+import securityCenter from '../apps/securityCenter';
+import dateTimeProperties from '../apps/dateTimeProperties';
+import systemProperties from '../apps/systemProperties';
+import appManagement from '../apps/appManagement';
 
 export type AppRunner = (args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) => void;
 
@@ -28,5 +33,10 @@ export const AppRegistry: { [key: string]: AppRunner } = {
     music,
     solitaire,
     paint,
-    userAccounts
+    userAccounts,
+    clearbatch,
+    securityCenter,
+    dateTimeProperties,
+    systemProperties,
+    appManagement
 };

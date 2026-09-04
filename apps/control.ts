@@ -1,4 +1,13 @@
 import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
+import controlPanelData from '../src/data/controlPanelData.json';
+
+interface IControlCategory {
+    id: string;
+    name: string;
+    desc: string;
+    icon: string;
+    action: string;
+}
 
 export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) {
     const [getViewMode, setViewMode, subscribeViewMode] = FCCF.useState<'category' | 'classic'>(
@@ -12,62 +21,19 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         ]
     });
 
-    const applets = [
-        {
-            name: 'Appearance and Themes',
-            desc: 'Change the appearance of desktop items, apply a theme or screen saver to your computer.',
-            icon: 'https://img.icons8.com/color/48/000000/brush.png',
-            action: () => XP_API.exec('displayProperties')
-        },
-        {
-            name: 'User Accounts',
-            desc: 'Change user account settings and passwords for people who share this computer.',
-            icon: 'https://img.icons8.com/color/48/000000/user.png',
-            action: () => XP_API.exec('userAccounts')
-        },
-        {
-            name: 'Security Center & Antivirus',
-            desc: 'View security status and run virus scans to protect your system.',
-            icon: 'https://img.icons8.com/color/48/000000/shield.png',
-            action: () => XP_API.exec('antivirus')
-        },
-        {
-            name: 'System and Maintenance',
-            desc: 'View system information and performance settings.',
-            icon: 'https://img.icons8.com/color/48/000000/speed.png',
-            action: () => XP_API.exec('about')
-        },
-        {
-            name: 'Administrative Tools (Registry)',
-            desc: 'View and configure Windows Registry and system services.',
-            icon: 'https://img.icons8.com/color/48/000000/registry-editor.png',
-            action: () => XP_API.exec('regedit')
-        },
-        {
-            name: 'Sounds and Audio Devices',
-            desc: 'Change the sound scheme for your computer or configure audio settings.',
-            icon: 'https://img.icons8.com/color/48/000000/speaker.png',
-            action: () => XP_API.exec('music')
-        },
-        {
-            name: 'Network and Internet Connections',
-            desc: 'Connect to the Internet, set up a home or office network.',
-            icon: 'https://img.icons8.com/color/48/000000/network.png',
-            action: () => XP_API.showDialog({ title: 'Network Connections', message: 'Local Area Connection: Connected (100.0 Mbps)\nIP Address: 192.168.1.100', type: 'info' })
-        },
-        {
-            name: 'Date, Time, Language, and Regional Options',
-            desc: 'Change the date, time, and time zone for your computer.',
-            icon: 'https://img.icons8.com/color/48/000000/calendar.png',
-            action: () => XP_API.showDialog({ title: 'Date and Time', message: `Current Date: ${new Date().toLocaleDateString()}\nCurrent Time: ${new Date().toLocaleTimeString()}`, type: 'info' })
-        },
-        {
-            name: 'Add or Remove Programs',
-            desc: 'Install or remove programs and Windows components.',
-            icon: 'https://img.icons8.com/color/48/000000/add-folder.png',
-            action: () => XP_API.showDialog({ title: 'Add or Remove Programs', message: 'Currently installed programs:\n- Microsoft Office XP\n- Windows Media Player 9\n- CentralFirm Antivirus\n- Microsoft Plus! for Windows XP', type: 'info' })
+    const handleAction = (act: string) => {
+        if (act === 'networkDialog') {
+            XP_API.showDialog({
+                title: 'Network Connections',
+                message: 'Local Area Connection\nStatus: Connected\nSpeed: 100.0 Mbps\nIP Address: 192.168.1.100\nSubnet Mask: 255.255.255.0\nDefault Gateway: 192.168.1.1',
+                type: 'info'
+            });
+        } else {
+            XP_API.exec(act);
         }
-    ];
+    };
+
+    const categories: IControlCategory[] = controlPanelData.categories;
 
     const mainContainer = document.createElement('div');
     mainContainer.style.flexGrow = '1';
@@ -96,7 +62,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
             grid.style.gap = '0.75rem';
 
-            applets.forEach(app => {
+            categories.forEach(app => {
                 const item = document.createElement('div');
                 item.style.display = 'flex';
                 item.style.gap = '0.625rem';
@@ -138,7 +104,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                     item.style.background = 'transparent';
                     item.style.borderColor = 'transparent';
                 };
-                item.onclick = app.action;
+                item.onclick = () => handleAction(app.action);
 
                 grid.appendChild(item);
             });
@@ -150,7 +116,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(6rem, 1fr))';
             grid.style.gap = '0.625rem';
 
-            applets.forEach(app => {
+            categories.forEach(app => {
                 const item = document.createElement('div');
                 item.style.display = 'flex';
                 item.style.flexDirection = 'column';
@@ -180,7 +146,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 item.onmouseout = () => {
                     item.style.background = 'transparent';
                 };
-                item.onclick = app.action;
+                item.onclick = () => handleAction(app.action);
 
                 grid.appendChild(item);
             });

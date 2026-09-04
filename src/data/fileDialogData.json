@@ -1,0 +1,56 @@
+{
+  "places": [
+    {
+      "id": "recent",
+      "name": "My Recent Documents",
+      "path": "C:/Documents",
+      "icon": "https://img.icons8.com/color/48/000000/clock.png"
+    },
+    {
+      "id": "desktop",
+      "name": "Desktop",
+      "path": "C:/Desktop",
+      "icon": "https://img.icons8.com/color/48/000000/desktop.png"
+    },
+    {
+      "id": "documents",
+      "name": "My Documents",
+      "path": "C:/Documents",
+      "icon": "https://img.icons8.com/color/48/000000/documents.png"
+    },
+    {
+      "id": "computer",
+      "name": "My Computer",
+      "path": "C:",
+      "icon": "https://img.icons8.com/color/48/000000/workstation.png"
+    },
+    {
+      "id": "network",
+      "name": "My Network Places",
+      "path": "C:/Documents",
+      "icon": "https://img.icons8.com/color/48/000000/network.png"
+    }
+  ],
+  "defaultFilters": [
+    { "label": "All Files (*.*)", "ext": "*" },
+    { "label": "Text Documents (*.txt)", "ext": "txt" },
+    { "label": "ClearBatch Definitions (*.cb.json, *.json)", "ext": "json" },
+    { "label": "Image Files (*.bmp, *.png, *.jpg)", "ext": "png" },
+    { "label": "Audio Files (*.mp3, *.wav)", "ext": "mp3" }
+  ],
+  "strings": {
+    "lookIn": "Look in:",
+    "fileName": "File name:",
+    "filesOfType": "Files of type:",
+    "open": "Open",
+    "save": "Save",
+    "select": "Select",
+    "cancel": "Cancel",
+    "upOneLevel": "Up One Level",
+    "newFolder": "Create New Folder",
+    "folderPrompt": "Please enter a name for the new folder:",
+    "defaultFolderName": "New Folder",
+    "confirmOverwrite": "already exists.\nDo you want to replace it?",
+    "fileNotFound": "The file could not be found. Please check the file name and try again."
+  }
+}

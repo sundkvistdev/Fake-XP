@@ -1,0 +1,74 @@
+{
+  "categories": [
+    {
+      "id": "appearance",
+      "name": "Appearance and Themes",
+      "desc": "Change the appearance of desktop items, apply a theme or screen saver to your computer.",
+      "icon": "https://img.icons8.com/color/48/000000/brush.png",
+      "action": "displayProperties"
+    },
+    {
+      "id": "security",
+      "name": "Security Center",
+      "desc": "View security status, configure Windows Firewall, Automatic Updates, and run virus scans.",
+      "icon": "https://img.icons8.com/color/48/000000/shield.png",
+      "action": "securityCenter"
+    },
+    {
+      "id": "users",
+      "name": "User Accounts",
+      "desc": "Change user account settings and passwords for people who share this computer.",
+      "icon": "https://img.icons8.com/color/48/000000/user.png",
+      "action": "userAccounts"
+    },
+    {
+      "id": "programs",
+      "name": "Add or Remove Programs",
+      "desc": "Install or remove programs and Windows components.",
+      "icon": "https://img.icons8.com/color/48/000000/add-folder.png",
+      "action": "appManagement"
+    },
+    {
+      "id": "system",
+      "name": "System and Maintenance",
+      "desc": "View system properties, computer specs, device manager, and performance settings.",
+      "icon": "https://img.icons8.com/color/48/000000/speed.png",
+      "action": "systemProperties"
+    },
+    {
+      "id": "datetime",
+      "name": "Date, Time, Language, and Regional Options",
+      "desc": "Change the date, time, time zone, and regional calendar settings.",
+      "icon": "https://img.icons8.com/color/48/000000/calendar.png",
+      "action": "dateTimeProperties"
+    },
+    {
+      "id": "clearbatch",
+      "name": "ClearBatch Automation Engine",
+      "desc": "Native JSON-driven UI runtime, diagnostics suite, and batch task automation.",
+      "icon": "https://img.icons8.com/color/48/000000/processor.png",
+      "action": "clearbatch"
+    },
+    {
+      "id": "admin",
+      "name": "Administrative Tools (Registry)",
+      "desc": "View and configure Windows Registry keys and system configuration tables.",
+      "icon": "https://img.icons8.com/color/48/000000/registry-editor.png",
+      "action": "regedit"
+    },
+    {
+      "id": "audio",
+      "name": "Sounds and Audio Devices",
+      "desc": "Change the sound scheme for your computer or configure audio playback settings.",
+      "icon": "https://img.icons8.com/color/48/000000/speaker.png",
+      "action": "music"
+    },
+    {
+      "id": "network",
+      "name": "Network and Internet Connections",
+      "desc": "Inspect network interfaces, connection status, IP configuration, and active links.",
+      "icon": "https://img.icons8.com/color/48/000000/network.png",
+      "action": "networkDialog"
+    }
+  ]
+}

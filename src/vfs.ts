@@ -20,6 +20,8 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                             'Music Player.lnk': { type: 'file', content: JSON.stringify({ app: 'music', args: '' }), isLink: true },
                             'Minesweeper.lnk': { type: 'file', content: JSON.stringify({ app: 'minesweeper', args: '' }), isLink: true },
                             'Solitaire.lnk': { type: 'file', content: JSON.stringify({ app: 'solitaire', args: '' }), isLink: true },
+                            'ClearBatch Demo.lnk': { type: 'file', content: JSON.stringify({ app: 'clearbatch', args: '' }), isLink: true },
+                            'Security Center.lnk': { type: 'file', content: JSON.stringify({ app: 'securityCenter', args: '' }), isLink: true },
                             'ReadMe.txt': { 
                                 type: 'file', 
                                 content: 'Welcome to Windows XP!\n\nThis system features a full Win32 component framework, virtual filesystem, registry, and application execution environment.\n\nEnjoy the classic experience!',
@@ -44,6 +46,8 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                             'Solitaire.lnk': { type: 'file', content: JSON.stringify({ app: 'solitaire', args: '' }), isLink: true },
                             'Registry Editor.lnk': { type: 'file', content: JSON.stringify({ app: 'regedit', args: '' }), isLink: true },
                             'Control Panel.lnk': { type: 'file', content: JSON.stringify({ app: 'control', args: '' }), isLink: true },
+                            'Security Center.lnk': { type: 'file', content: JSON.stringify({ app: 'securityCenter', args: '' }), isLink: true },
+                            'ClearBatch Studio.lnk': { type: 'file', content: JSON.stringify({ app: 'clearbatch', args: '' }), isLink: true },
                             'CentralFirm Antivirus.lnk': { type: 'file', content: JSON.stringify({ app: 'antivirus', args: '' }), isLink: true }
                         }
                     },
@@ -56,7 +60,26 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                             },
                             'Todo.txt': {
                                 type: 'file',
-                                content: '1. Explore Control Panel\n2. Set custom wallpaper in Display Properties\n3. Play Minesweeper and Solitaire\n4. Scan files with Antivirus\n5. Draw graphics in Paint'
+                                content: '1. Explore Control Panel\n2. Set custom wallpaper in Display Properties\n3. Play Minesweeper and Solitaire\n4. Scan files with Antivirus\n5. Draw graphics in Paint\n6. Run ClearBatch System Diagnostics'
+                            },
+                            'Diagnostics.cb': {
+                                type: 'file',
+                                content: JSON.stringify({
+                                    type: 'ClearBatchApp',
+                                    version: '1.0',
+                                    meta: { name: 'Quick System Health Check' },
+                                    window: { title: 'Quick System Health Check', width: 480, height: 360 },
+                                    sections: [
+                                        {
+                                            title: 'Automated Diagnostic',
+                                            controls: [
+                                                { type: 'summary', items: [{ label: 'VFS Integrity', value: 'Healthy (100%)' }, { label: 'ADR Runtime', value: 'Operational' }, { label: 'Security Center', value: 'Active' }] },
+                                                { type: 'progress', label: 'Health Score', value: 100 },
+                                                { type: 'button', label: 'Run Full Suite', action: 'runBenchmark' }
+                                            ]
+                                        }
+                                    ]
+                                }, null, 2)
                             },
                             'virus_test.exe': {
                                 type: 'file',
@@ -134,6 +157,8 @@ export class VirtualFileSystem implements IVirtualFileSystem {
                                             'txt': 'notepad',
                                             'js': 'ADR',
                                             'ts': 'ADR',
+                                            'cb': 'clearbatch',
+                                            'clrb': 'clearbatch',
                                             'lnk': 'shell',
                                             'bmp': 'paint',
                                             'png': 'paint',
@@ -215,6 +240,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
     public ls(path: string): string[] {
         const node = this.resolvePath(path);
         return (node && node.type === 'dir' && node.children) ? Object.keys(node.children) : [];
+    }
+
+    public readDir(path: string): string[] {
+        return this.ls(path);
     }
 
     public stat(path: string): VFSStat | null {

@@ -1,0 +1,45 @@
+{
+  "title": "Windows Security Center",
+  "header": {
+    "title": "Security Essentials",
+    "description": "Security essentials help protect your computer against viruses and other security hazards."
+  },
+  "statusMessages": {
+    "protected": "Your computer appears to be well protected. All security essentials are currently configured and active.",
+    "warning": "Check your security settings. One or more security essentials may need your attention.",
+    "critical": "Your computer is at risk. Antivirus or Firewall protection is disabled."
+  },
+  "items": {
+    "firewall": {
+      "title": "Firewall",
+      "descriptionActive": "Windows Firewall is currently ON and inspecting incoming connections to prevent unauthorized access.",
+      "descriptionInactive": "Windows Firewall is turned OFF. Your computer is vulnerable to network intrusion.",
+      "recommendation": "Recommendations: Keep Windows Firewall turned on at all times."
+    },
+    "automaticUpdates": {
+      "title": "Automatic Updates",
+      "descriptionActive": "Automatic Updates is set to automatically download and install high-priority updates for Windows.",
+      "descriptionInactive": "Automatic Updates is turned OFF. Your system may not receive critical security patches.",
+      "recommendation": "Recommendations: Turn on Automatic Updates to keep your computer up to date."
+    },
+    "virusProtection": {
+      "title": "Virus Protection",
+      "descriptionActive": "CentralFirm Antivirus is active and real-time scanning is enabled. Virus definitions are current.",
+      "descriptionInactive": "Virus Protection is not running or disabled. Your computer may be infected with malware.",
+      "recommendation": "Recommendations: Run a full scan regularly using CentralFirm Antivirus."
+    },
+    "internetOptions": {
+      "title": "Internet Security Settings",
+      "descriptionActive": "All Internet security settings are configured to recommended levels.",
+      "descriptionInactive": "Custom Internet security settings are in effect.",
+      "recommendation": "Recommendations: Keep the security zone at Medium or High."
+    }
+  },
+  "resources": [
+    { "title": "Get the latest security and virus information from Microsoft", "url": "https://www.microsoft.com/security" },
+    { "title": "Change the way Security Center alerts me", "action": "alerts" },
+    { "title": "Manage security settings for Windows Firewall", "action": "firewall" },
+    { "title": "Manage security settings for Automatic Updates", "action": "updates" },
+    { "title": "Scan system for malicious threats", "action": "antivirus" }
+  ]
+}

@@ -4,12 +4,17 @@ export class Registry implements IRegistry {
     private readonly kernel: IKernel;
     private readonly registryPath = 'C:/System/sysconf.json';
     private readonly observers: Map<string, Set<(val: unknown) => void>> = new Map();
+    private _cachedImage: Record<string, unknown> | null = null;
 
     constructor(kernelRef: IKernel) {
         this.kernel = kernelRef;
     }
 
     private load(): Record<string, unknown> {
+        if (this._cachedImage !== null) {
+            return this._cachedImage;
+        }
+
         const vfs = this.kernel.VFS;
         const data = vfs.readFile(this.registryPath);
         if (!data) {
@@ -36,10 +41,16 @@ export class Registry implements IRegistry {
                         'jpg': 'paint',
                         'mp3': 'music',
                         'wav': 'music',
-                        'reg': 'regedit'
+                        'reg': 'regedit',
+                        'cb': 'clearbatch',
+                        'clrb': 'clearbatch',
+                        'json': 'clearbatch'
                     }
                 },
                 Security: {
+                    Firewall: { Enabled: true, Exceptions: ['Remote Assistance', 'UPnP Framework'] },
+                    AutomaticUpdates: { Enabled: true, Option: 'automatic', Schedule: 'Daily at 03:00' },
+                    Antivirus: { LastScan: null, AutoProtect: true, DatabaseVersion: '2026.04.12' },
                     Users: {
                         'Administrator': {
                             username: 'Administrator',
@@ -68,21 +79,37 @@ export class Registry implements IRegistry {
                     Explorer: { ShowHidden: false, ViewMode: 'icons', ConfirmDelete: true },
                     Calculator: { Mode: 'standard', Precision: 10 },
                     Antivirus: { LastScan: null, AutoProtect: true, DatabaseVersion: '2026.04.12' },
-                    Paint: { PrimaryColor: '#000000', SecondaryColor: '#ffffff', BrushSize: 2 }
+                    Paint: { PrimaryColor: '#000000', SecondaryColor: '#ffffff', BrushSize: 2 },
+                    CommonDialogs: { LastDir: 'C:/Documents' }
                 }
             };
+            this._cachedImage = initial;
             vfs.writeFile(this.registryPath, JSON.stringify(initial, null, 2));
-            return initial;
+            return this._cachedImage;
         }
         try {
-            return JSON.parse(data) as Record<string, unknown>;
+            this._cachedImage = JSON.parse(data) as Record<string, unknown>;
+            return this._cachedImage;
         } catch {
-            return {};
+            this._cachedImage = {};
+            return this._cachedImage;
         }
     }
 
     private save(data: Record<string, unknown>): boolean {
+        this._cachedImage = data;
         return this.kernel.VFS.writeFile(this.registryPath, JSON.stringify(data, null, 2));
+    }
+
+    public reload(): void {
+        this._cachedImage = null;
+        this.load();
+    }
+
+    public flush(): void {
+        if (this._cachedImage) {
+            this.save(this._cachedImage);
+        }
     }
 
     public get<T = unknown>(path: string, defaultValue?: T): T {

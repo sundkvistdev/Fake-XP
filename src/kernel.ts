@@ -1,9 +1,10 @@
-import { IKernel, IVirtualFileSystem, IWindowManager, IFCCF, IRegistry, User, DialogOptions, MenuItem, TrayIconOptions, TrayIconInstance, Step, WindowOptions, AppInstance, FCCFComponent, CreateElementOptions } from './types';
+import { IKernel, IVirtualFileSystem, IWindowManager, IFCCF, IRegistry, User, DialogOptions, FileDialogOptions, MenuItem, TrayIconOptions, TrayIconInstance, Step, WindowOptions, AppInstance, FCCFComponent, CreateElementOptions } from './types';
 import { VirtualFileSystem } from './vfs';
 import { WindowManager } from './window_manager';
 import { CentralComponentFramework } from './compfwk';
 import { Registry } from './registry';
 import { AppRegistry } from './appRegistry';
+import showFileDialog from './fileDialog';
 
 export class Kernel implements IKernel {
     public VFSRef!: VirtualFileSystem; // Explicit property for direct class typed access
@@ -265,10 +266,12 @@ export class Kernel implements IKernel {
             }
         }
 
-        // Handle file associations
+        // Handle file associations using Registry / SystemCT
         if (path.includes('.')) {
             const ext = path.split('.').pop()!.toLowerCase();
-            const associations = this.Registry.get('System/Associations') as Record<string, string>;
+            const sct = this.getSCT<{ Associations?: Record<string, string> }>();
+            const regAssoc = this.Registry.get<Record<string, string>>('System/Associations');
+            const associations = regAssoc || sct?.Associations || {};
             if (associations && associations[ext]) {
                 const app = associations[ext];
                 if (app === 'ADR') {
@@ -306,56 +309,87 @@ export class Kernel implements IKernel {
             return;
         }
 
-        // Normalize path
+        // 1. Check VFS (Virtual File System)
         let fullPath = appName;
         if (!appName.includes('/') && !appName.includes('.')) {
             fullPath = `C:/Apps/${appName}.js`;
         }
 
-        let scriptText = this.VFS.readFile(fullPath);
+        let scriptText = this.VFS.readFile(fullPath) || this.VFS.readFile(appName);
 
-        if (!scriptText) {
-            // Check if there is an ESM TypeScript app we can dynamically import!
-            // First normalize system names
-            let sysAppName = appName;
-            if (appName.includes('/')) {
-                const last = appName.split('/').pop()!;
-                sysAppName = last.split('.')[0];
-            }
-            
+        // Check if file is a ClearBatch JSON file in VFS
+        if (scriptText && (appName.endsWith('.json') || appName.endsWith('.cb') || appName.endsWith('.clrb') || fullPath.endsWith('.json'))) {
             try {
-                // Vite dynamically loads TS files using ES Modules! Let's import the file!
-                // Since this runs on the client-side dev server we can import the relative TS file directly
+                const parsed = JSON.parse(scriptText);
+                if (parsed.type === 'ClearBatchApp' || parsed.sections || parsed.tabs) {
+                    AppRegistry['clearbatch'](parsed, this.FCCF, this, this.VFS);
+                    return;
+                }
+            } catch {
+                // Not JSON, continue to script runner
+            }
+        }
+
+        // 2. If not in VFS, check Origin (fetch from origin server or dynamic import)
+        if (!scriptText) {
+            try {
+                // Check if there is an ESM TypeScript app we can dynamically import
                 const dynamicPath = `/apps/${sysAppName}.ts`;
                 const appModule = await import(/* @vite-ignore */ dynamicPath);
                 if (appModule && appModule.default) {
-                    // Call ESM TS exported module function
                     appModule.default(args || {}, this.FCCF, this, this.VFS);
                     return;
                 }
-            } catch (err: unknown) {
-                console.log(`Failed to import ESM TS app normally (expected for custom file apps): ${sysAppName}. Falling back to fetch.`, err);
+            } catch {
+                // Continue to origin fetch
             }
 
-            // Fallback: fetch from server (could be .js if built or .ts)
-            const serverUrl = appName.includes('/') ? appName : `/apps/${appName}.js`;
-            try {
-                const res = await fetch(serverUrl);
-                if (!res.ok) throw new Error('App not found on server');
-                scriptText = await res.text();
-                if (!appName.includes('/')) {
-                    this.VFS.writeFile(fullPath, scriptText);
+            // Fallback: fetch from server origin
+            const candidateUrls = appName.startsWith('http') || appName.startsWith('/')
+                ? [appName]
+                : [`/apps/${appName}.js`, `/apps/${appName}.ts`, `/apps/${appName}.json`];
+
+            let fetched = false;
+            for (const serverUrl of candidateUrls) {
+                try {
+                    const res = await fetch(serverUrl);
+                    if (res.ok) {
+                        scriptText = await res.text();
+                        // Cache into VFS for fast subsequent loads
+                        const targetVfsPath = fullPath.startsWith('C:/') ? fullPath : `C:/Apps/${sysAppName}`;
+                        this.VFS.writeFile(targetVfsPath, scriptText);
+                        fetched = true;
+                        break;
+                    }
+                } catch {
+                    // Try next candidate
                 }
-            } catch (err: unknown) {
+            }
+
+            if (!fetched || !scriptText) {
                 this.showDialog({ 
                     title: 'ADR Error', 
-                    message: `Could not load application "${appName}": ${(err as Error).message}`, 
+                    message: `Could not load application "${appName}" from VFS or Origin server.`, 
                     type: 'error' 
                 });
                 return;
             }
         }
 
+        // Handle JSON ClearBatch definition from origin
+        if (scriptText.trim().startsWith('{')) {
+            try {
+                const parsed = JSON.parse(scriptText);
+                if (parsed.type === 'ClearBatchApp' || parsed.sections || parsed.tabs) {
+                    AppRegistry['clearbatch'](parsed, this.FCCF, this, this.VFS);
+                    return;
+                }
+            } catch {
+                // Continue to code execution
+            }
+        }
+
+        // Execute JS code runtime
         if (scriptText) {
             try {
                 const fn = new Function('args', 'FCCF', 'XP_API', 'VFS', scriptText);
@@ -400,13 +434,16 @@ export class Kernel implements IKernel {
             iconUrl = 'https://img.icons8.com/color/48/000000/folder-invoices.png';
         } else {
             const ext = path.split('.').pop()!.toLowerCase();
-            const associations = this.Registry.get('System/Associations');
+            const sct = this.getSCT<{ Associations?: Record<string, string> }>();
+            const regAssoc = this.Registry.get<Record<string, string>>('System/Associations');
+            const associations = regAssoc || sct?.Associations || {};
             if (associations && associations[ext]) {
                 const app = associations[ext];
                 if (app === 'notepad') iconUrl = 'https://img.icons8.com/color/48/000000/notepad.png';
                 else if (app === 'calc') iconUrl = 'https://img.icons8.com/color/48/000000/calculator.png';
                 else if (app === 'paint') iconUrl = 'https://img.icons8.com/color/48/000000/paint-palette.png';
                 else if (app === 'cmd') iconUrl = 'https://img.icons8.com/color/48/000000/console.png';
+                else if (app === 'clearbatch') iconUrl = 'https://img.icons8.com/color/48/000000/processor.png';
                 else if (app === 'ADR') iconUrl = 'https://img.icons8.com/color/48/000000/shield.png';
             }
             
@@ -662,6 +699,10 @@ export class Kernel implements IKernel {
             setTimeout(() => { el.focus(); }, 100);
         }
         return win;
+    }
+
+    public showFileDialog(options: FileDialogOptions): AppInstance | null {
+        return showFileDialog(this, options);
     }
 
     public showContextMenu(x: number, y: number, items: MenuItem[]): void {

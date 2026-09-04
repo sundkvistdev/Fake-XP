@@ -1,0 +1,206 @@
+{
+  "type": "ClearBatchApp",
+  "version": "1.0",
+  "meta": {
+    "name": "ClearBatch System Diagnostics & Benchmark Suite",
+    "author": "Retro Computing Lab",
+    "description": "Native Win32 JSON-driven user interface and batch processing engine."
+  },
+  "window": {
+    "title": "ClearBatch System Diagnostics & Automation Suite",
+    "width": 620,
+    "height": 520,
+    "icon": "https://img.icons8.com/color/48/000000/processor.png"
+  },
+  "initialState": {
+    "benchmarkType": "cpu",
+    "iterations": "50000",
+    "stressLevel": "Standard",
+    "enableLogging": true,
+    "autoFlush": true,
+    "sourcePath": "C:/Documents",
+    "targetPath": "C:/Desktop",
+    "batchAction": "Scan & Validate Files",
+    "filterExt": "*.txt;*.exe",
+    "cpuScore": "Pending test...",
+    "memoryScore": "Pending test...",
+    "diskScore": "Pending test...",
+    "statusMessage": "ClearBatch runtime ready. Select an automated task or benchmark."
+  },
+  "menu": [
+    {
+      "text": "File",
+      "items": [
+        { "text": "Open Batch Definition...", "action": "openBatchFile" },
+        { "text": "Save Diagnostic Report...", "action": "saveReport" },
+        { "separator": true },
+        { "text": "Exit", "action": "closeApp" }
+      ]
+    },
+    {
+      "text": "Operations",
+      "items": [
+        { "text": "Execute Selected Benchmark", "action": "runBenchmark" },
+        { "text": "Execute Batch Automation", "action": "runBatch" },
+        { "separator": true },
+        { "text": "Reset Form Values", "action": "resetState" }
+      ]
+    },
+    {
+      "text": "Help",
+      "items": [
+        { "text": "About ClearBatch...", "action": "showAbout" }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "tabBenchmark",
+      "title": "System Benchmark",
+      "sections": [
+        {
+          "type": "group",
+          "title": "Benchmark Configuration",
+          "fields": [
+            {
+              "id": "benchmarkType",
+              "label": "Test Profile:",
+              "type": "dropdown",
+              "options": [
+                { "value": "cpu", "label": "CPU Prime Calculation & Integer ALU" },
+                { "value": "mem", "label": "Memory Bandwidth & Heap Allocation" },
+                { "value": "vfs", "label": "VFS I/O & Registry Latency" },
+                { "value": "all", "label": "Full Comprehensive System Suite" }
+              ]
+            },
+            {
+              "id": "iterations",
+              "label": "Calculation Cycles:",
+              "type": "text",
+              "placeholder": "e.g. 50000"
+            },
+            {
+              "id": "stressLevel",
+              "label": "Workload Stress Level:",
+              "type": "dropdown",
+              "options": [
+                { "value": "Light", "label": "Light (Quick verification)" },
+                { "value": "Standard", "label": "Standard (Recommended)" },
+                { "value": "Intensive", "label": "Intensive (Deep stress test)" }
+              ]
+            },
+            {
+              "id": "enableLogging",
+              "label": "Log real-time cycle results to VFS",
+              "type": "checkbox"
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "title": "Benchmark Execution & Real-Time Metrics",
+          "fields": [
+            {
+              "id": "progress",
+              "type": "progress",
+              "initial": 0
+            },
+            {
+              "id": "resultsSummary",
+              "type": "summary",
+              "items": [
+                { "label": "CPU Performance Index:", "bind": "cpuScore" },
+                { "label": "Memory Subsystem Latency:", "bind": "memoryScore" },
+                { "label": "VFS Storage Throughput:", "bind": "diskScore" }
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": [
+        { "id": "btnRun", "text": "Run Benchmark", "isDefault": true, "action": "runBenchmark" },
+        { "id": "btnSaveReport", "text": "Save Report...", "action": "saveReport" }
+      ]
+    },
+    {
+      "id": "tabBatch",
+      "title": "Batch Automation",
+      "sections": [
+        {
+          "type": "group",
+          "title": "Batch Parameters",
+          "fields": [
+            {
+              "id": "sourcePath",
+              "label": "Source Folder:",
+              "type": "filePicker",
+              "pickerMode": "folder"
+            },
+            {
+              "id": "batchAction",
+              "label": "Automation Task:",
+              "type": "dropdown",
+              "options": [
+                { "value": "Scan & Validate Files", "label": "Scan & Validate VFS Integrity" },
+                { "value": "Archive & Compress Documents", "label": "Archive & Compress Documents" },
+                { "value": "Registry Index Optimization", "label": "Optimize Registry Image Cache" }
+              ]
+            },
+            {
+              "id": "filterExt",
+              "label": "Target Extensions:",
+              "type": "text",
+              "placeholder": "*.txt;*.json;*.exe"
+            },
+            {
+              "id": "autoFlush",
+              "label": "Automatically commit changes to storage",
+              "type": "checkbox"
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "title": "Execution Console",
+          "fields": [
+            {
+              "id": "logOutput",
+              "type": "logArea",
+              "initialText": "[ClearBatch Engine v1.0 initialized]\nAutomatic UI component auto-fitter ready.\nAwaiting batch instruction..."
+            }
+          ]
+        }
+      ],
+      "actions": [
+        { "id": "btnExecuteBatch", "text": "Execute Batch", "isDefault": true, "action": "runBatch" },
+        { "id": "btnClearLog", "text": "Clear Log", "action": "clearLog" }
+      ]
+    },
+    {
+      "id": "tabSchema",
+      "title": "JSON Schema Viewer",
+      "sections": [
+        {
+          "type": "group",
+          "title": "Underlying Declarative JSON Definition (No HTML/CSS)",
+          "fields": [
+            {
+              "id": "jsonCode",
+              "type": "jsonViewer"
+            }
+          ]
+        }
+      ],
+      "actions": [
+        { "id": "btnOpenJson", "text": "Open External JSON...", "action": "openBatchFile" },
+        { "id": "btnReload", "text": "Reload Definition", "action": "reloadDefinition" }
+      ]
+    }
+  ],
+  "statusBar": {
+    "panels": [
+      { "bind": "statusMessage", "flexGrow": true },
+      { "text": "Native JSON UI Engine", "width": "11rem" }
+    ]
+  }
+}

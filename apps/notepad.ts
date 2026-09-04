@@ -65,30 +65,22 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     };
 
     const handleOpen = () => {
-        XP_API.showDialog({
-            type: 'prompt',
+        XP_API.showFileDialog({
+            mode: 'open',
             title: 'Open',
-            message: 'Enter path of file to open:',
-            value: getCurrentPath() || 'C:/Documents/readme.txt',
-            onOk: (val) => {
-                if (typeof val === 'string' && val.trim().length > 0) {
-                    const path = val.trim();
-                    const data = VFS.readFile(path);
-                    if (data !== null) {
-                        setCurrentPath(path);
-                        setContent(data);
-                        txtInput.value = data;
-                        updateTitle(path);
-                        XP_API.Registry.set('Apps/Notepad/LastFile', path);
-                    } else {
-                        XP_API.showDialog({ title: 'Notepad', message: `Cannot find the ${path} file.\nDo you want to create a new file?`, type: 'confirm', onOk: () => {
-                            VFS.writeFile(path, '');
-                            setCurrentPath(path);
-                            setContent('');
-                            txtInput.value = '';
-                            updateTitle(path);
-                        }});
-                    }
+            initialPath: getCurrentPath(),
+            filters: [
+                { label: 'Text Documents (*.txt)', ext: 'txt' },
+                { label: 'All Files (*.*)', ext: '*' }
+            ],
+            onSelect: (selectedPath) => {
+                const data = VFS.readFile(selectedPath);
+                if (data !== null) {
+                    setCurrentPath(selectedPath);
+                    setContent(data);
+                    txtInput.value = data;
+                    updateTitle(selectedPath);
+                    XP_API.Registry.set('Apps/Notepad/LastFile', selectedPath);
                 }
             }
         });
@@ -105,20 +97,21 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     };
 
     const handleSaveAs = () => {
-        XP_API.showDialog({
-            type: 'prompt',
+        XP_API.showFileDialog({
+            mode: 'save',
             title: 'Save As',
-            message: 'Enter destination path:',
-            value: getCurrentPath() || 'C:/Documents/Untitled.txt',
-            onOk: (val) => {
-                if (typeof val === 'string' && val.trim().length > 0) {
-                    const path = val.trim();
-                    VFS.writeFile(path, getContent());
-                    setCurrentPath(path);
-                    updateTitle(path);
-                    XP_API.Registry.set('Apps/Notepad/LastFile', path);
-                    XP_API.showDialog({ title: 'Notepad', message: `File saved to ${path}.`, type: 'info' });
-                }
+            initialPath: getCurrentPath() || 'C:/Documents',
+            defaultFileName: getCurrentPath() ? getCurrentPath().split('/').pop() : 'Untitled.txt',
+            filters: [
+                { label: 'Text Documents (*.txt)', ext: 'txt' },
+                { label: 'All Files (*.*)', ext: '*' }
+            ],
+            onSelect: (selectedPath) => {
+                VFS.writeFile(selectedPath, getContent());
+                setCurrentPath(selectedPath);
+                updateTitle(selectedPath);
+                XP_API.Registry.set('Apps/Notepad/LastFile', selectedPath);
+                XP_API.showDialog({ title: 'Notepad', message: `File saved to ${selectedPath}.`, type: 'info' });
             }
         });
     };

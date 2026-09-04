@@ -35,6 +35,7 @@ export interface VFSStream {
 
 export interface IVirtualFileSystem {
     ls(path: string): string[];
+    readDir(path: string): string[];
     stat(path: string): VFSStat | null;
     readFile(path: string): string | null;
     writeFile(path: string, content: string, metadata?: VFSMetadata | null): boolean;
@@ -417,6 +418,22 @@ export interface GroupBoxOptions {
     style?: Partial<CSSStyleDeclaration>;
 }
 
+export interface FileDialogFilter {
+    label: string;
+    ext: string;
+}
+
+export interface FileDialogOptions {
+    mode: 'open' | 'save' | 'openFolder';
+    title?: string;
+    initialPath?: string;
+    defaultFileName?: string;
+    filters?: FileDialogFilter[];
+    selectFolder?: boolean;
+    onSelect: (selectedPath: string) => void;
+    onCancel?: () => void;
+}
+
 export interface DialogOptions {
     title?: string;
     message: string;
@@ -479,6 +496,8 @@ export interface IRegistry {
     observe<T = unknown>(path: string, callback: (newVal: T) => void): () => void;
     getAll(): Record<string, unknown>;
     dump<T = Record<string, unknown>>(): T;
+    reload(): void;
+    flush(): void;
 }
 
 export interface IKernel {
@@ -506,6 +525,7 @@ export interface IKernel {
     getSCT<T = Record<string, unknown>>(): T;
     setSCT<T = Record<string, unknown>>(data: T): void;
     showDialog(options: DialogOptions): AppInstance | null;
+    showFileDialog(options: FileDialogOptions): AppInstance | null;
     showContextMenu(x: number, y: number, items: MenuItem[]): void;
     showTooltip(el: HTMLElement, options: { text: string; delay?: number }): void;
     showInstaller(steps: Step[], onFinish?: () => void): void;
