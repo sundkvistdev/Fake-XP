@@ -241,11 +241,13 @@ export interface TabItem {
     id: string;
     title: string;
     content: HTMLElement | FCCFComponent | string;
+    disabled?: boolean;
 }
 
 export type TabControlComponent = FCCFComponent<HTMLDivElement, {
     setActiveTab: (id: string) => void;
     getActiveTab: () => string;
+    setTabDisabled: (id: string, disabled: boolean) => void;
 }>;
 
 export interface ListViewColumn {
@@ -437,7 +439,7 @@ export interface FileDialogOptions {
 export interface DialogOptions {
     title?: string;
     message: string;
-    type?: 'info' | 'error' | 'warning' | 'confirm' | 'prompt' | 'multiSelect' | 'dropdown' | 'progress';
+    type?: 'info' | 'error' | 'warning' | 'confirm' | 'prompt' | 'multiSelect' | 'dropdown' | 'progress' | 'details' | 'colorPicker' | 'findReplace' | 'about';
     value?: string;
     width?: number;
     height?: number;
@@ -457,6 +459,8 @@ export interface DialogOptions {
     resizable?: boolean;
     parent?: string;
     icon?: string;
+    detailsText?: string;
+    colorValue?: string;
 }
 
 export interface IFCCF {
@@ -493,6 +497,7 @@ export interface IRegistry {
     delete(path: string): void;
     exists(path: string): boolean;
     keys(path: string): string[];
+    getKeys(path: string): string[];
     observe<T = unknown>(path: string, callback: (newVal: T) => void): () => void;
     getAll(): Record<string, unknown>;
     dump<T = Record<string, unknown>>(): T;

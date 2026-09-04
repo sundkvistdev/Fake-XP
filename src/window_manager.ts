@@ -169,37 +169,45 @@ export class AppWindow implements AppInstance {
         if (this.resizable) {
             const resizeHandle = document.createElement('div');
             resizeHandle.className = 'window-resize-handle';
-            Object.assign(resizeHandle.style, {
-                position: 'absolute',
-                right: '0',
-                bottom: '0',
-                width: '10px',
-                height: '10px',
-                cursor: 'nwse-resize'
-            });
             
-            resizeHandle.onmousedown = (e) => {
+            resizeHandle.onpointerdown = (e: PointerEvent) => {
                 e.preventDefault();
                 e.stopPropagation();
+                try {
+                    resizeHandle.setPointerCapture(e.pointerId);
+                } catch {
+                    // Ignore if pointer capture fails
+                }
                 const startWidth = this.width;
                 const startHeight = this.height;
                 const startX = e.clientX;
                 const startY = e.clientY;
                 
-                const onMouseMove = (moveEvent: MouseEvent) => {
-                    this.width = startWidth + (moveEvent.clientX - startX);
-                    this.height = startHeight + (moveEvent.clientY - startY);
+                const onPointerMove = (moveEvent: PointerEvent) => {
+                    const minW = this.isDialog ? 320 : 200;
+                    const minH = this.isDialog ? 150 : 120;
+                    this.width = Math.max(minW, startWidth + (moveEvent.clientX - startX));
+                    this.height = Math.max(minH, startHeight + (moveEvent.clientY - startY));
                     win.style.width = this.width + 'px';
                     win.style.height = this.height + 'px';
                 };
                 
-                const onMouseUp = () => {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    document.removeEventListener('mouseup', onMouseUp);
+                const onPointerUp = (upEvent: PointerEvent) => {
+                    try {
+                        if (resizeHandle.hasPointerCapture(upEvent.pointerId)) {
+                            resizeHandle.releasePointerCapture(upEvent.pointerId);
+                        }
+                    } catch {
+                        // Ignore
+                    }
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+                    window.removeEventListener('pointercancel', onPointerUp);
                 };
                 
-                document.addEventListener('mousemove', onMouseMove);
-                document.addEventListener('mouseup', onMouseUp);
+                window.addEventListener('pointermove', onPointerMove);
+                window.addEventListener('pointerup', onPointerUp);
+                window.addEventListener('pointercancel', onPointerUp);
             };
             win.appendChild(resizeHandle);
         }

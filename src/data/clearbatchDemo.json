@@ -1,6 +1,6 @@
 {
   "type": "ClearBatchApp",
-  "version": "1.0",
+  "version": "2.0",
   "meta": {
     "name": "ClearBatch System Diagnostics & Benchmark Suite",
     "author": "Retro Computing Lab",
@@ -8,8 +8,8 @@
   },
   "window": {
     "title": "ClearBatch System Diagnostics & Automation Suite",
-    "width": 620,
-    "height": 520,
+    "width": 640,
+    "height": 540,
     "icon": "https://img.icons8.com/color/48/000000/processor.png"
   },
   "initialState": {
@@ -25,7 +25,7 @@
     "cpuScore": "Pending test...",
     "memoryScore": "Pending test...",
     "diskScore": "Pending test...",
-    "statusMessage": "ClearBatch runtime ready. Select an automated task or benchmark."
+    "statusMessage": "ClearBatch v2.0 runtime ready on ${$OS}. Select an automated task or benchmark."
   },
   "menu": [
     {
@@ -64,86 +64,100 @@
           "fields": [
             {
               "id": "benchmarkType",
-              "label": "Test Profile:",
+              "label": "Test Suite Profile:",
               "type": "dropdown",
               "options": [
-                { "value": "cpu", "label": "CPU Prime Calculation & Integer ALU" },
-                { "value": "mem", "label": "Memory Bandwidth & Heap Allocation" },
-                { "value": "vfs", "label": "VFS I/O & Registry Latency" },
-                { "value": "all", "label": "Full Comprehensive System Suite" }
+                { "value": "cpu", "label": "CPU ALU & FPU Integer Suite" },
+                { "value": "memory", "label": "Memory Bandwidth & Latency" },
+                { "value": "vfs", "label": "Virtual Storage I/O Throughput" },
+                { "value": "full", "label": "Comprehensive System Stress" }
               ]
             },
             {
               "id": "iterations",
               "label": "Calculation Cycles:",
               "type": "text",
-              "placeholder": "e.g. 50000"
+              "placeholder": "50000"
             },
             {
               "id": "stressLevel",
-              "label": "Workload Stress Level:",
+              "label": "Thread Load Priority:",
               "type": "dropdown",
               "options": [
-                { "value": "Light", "label": "Light (Quick verification)" },
-                { "value": "Standard", "label": "Standard (Recommended)" },
-                { "value": "Intensive", "label": "Intensive (Deep stress test)" }
+                { "value": "Low", "label": "Low (Background Priority)" },
+                { "value": "Standard", "label": "Normal (Standard Win32)" },
+                { "value": "High", "label": "High (Real-time Priority)" }
               ]
             },
             {
               "id": "enableLogging",
-              "label": "Log real-time cycle results to VFS",
+              "label": "Stream real-time performance telemetry to event buffer",
               "type": "checkbox"
             }
           ]
         },
         {
           "type": "group",
-          "title": "Benchmark Execution & Real-Time Metrics",
+          "title": "Execution Progress",
           "fields": [
             {
-              "id": "progress",
+              "id": "benchProgress",
               "type": "progress",
               "initial": 0
-            },
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "title": "Performance Metric Readouts",
+          "fields": [
             {
-              "id": "resultsSummary",
+              "id": "metricsSummary",
               "type": "summary",
               "items": [
-                { "label": "CPU Performance Index:", "bind": "cpuScore" },
-                { "label": "Memory Subsystem Latency:", "bind": "memoryScore" },
-                { "label": "VFS Storage Throughput:", "bind": "diskScore" }
+                { "label": "Target Architecture", "bind": "${$OS}" },
+                { "label": "Active User", "bind": "${$USER}" },
+                { "label": "CPU Benchmark", "bind": "${cpuScore}" },
+                { "label": "RAM Throughput", "bind": "${memoryScore}" },
+                { "label": "Virtual Disk I/O", "bind": "${diskScore}" }
               ]
             }
           ]
         }
       ],
       "actions": [
-        { "id": "btnRun", "text": "Run Benchmark", "isDefault": true, "action": "runBenchmark" },
-        { "id": "btnSaveReport", "text": "Save Report...", "action": "saveReport" }
+        { "id": "btnRunBench", "text": "Run Benchmark", "isDefault": true, "action": "runBenchmark" },
+        { "id": "btnResetBench", "text": "Reset Scores", "action": "resetScores" }
       ]
     },
     {
       "id": "tabBatch",
-      "title": "Batch Automation",
+      "title": "VFS Batch Operations",
       "sections": [
         {
           "type": "group",
-          "title": "Batch Parameters",
+          "title": "File System Parameters",
           "fields": [
             {
               "id": "sourcePath",
-              "label": "Source Folder:",
+              "label": "Source Directory:",
+              "type": "filePicker",
+              "pickerMode": "folder"
+            },
+            {
+              "id": "targetPath",
+              "label": "Destination Directory:",
               "type": "filePicker",
               "pickerMode": "folder"
             },
             {
               "id": "batchAction",
-              "label": "Automation Task:",
+              "label": "Operation to Perform:",
               "type": "dropdown",
               "options": [
-                { "value": "Scan & Validate Files", "label": "Scan & Validate VFS Integrity" },
-                { "value": "Archive & Compress Documents", "label": "Archive & Compress Documents" },
-                { "value": "Registry Index Optimization", "label": "Optimize Registry Image Cache" }
+                { "value": "Scan & Validate Files", "label": "Scan & Validate Files" },
+                { "value": "Synchronize VFS Tree", "label": "Synchronize VFS Tree" },
+                { "value": "Purge Temporary Files", "label": "Purge Temporary Files" }
               ]
             },
             {
@@ -166,7 +180,7 @@
             {
               "id": "logOutput",
               "type": "logArea",
-              "initialText": "[ClearBatch Engine v1.0 initialized]\nAutomatic UI component auto-fitter ready.\nAwaiting batch instruction..."
+              "initialText": "[ClearBatch Engine v2.0 initialized]\nAutomatic UI component auto-fitter ready.\nAwaiting batch instruction..."
             }
           ]
         }
@@ -195,12 +209,39 @@
         { "id": "btnOpenJson", "text": "Open External JSON...", "action": "openBatchFile" },
         { "id": "btnReload", "text": "Reload Definition", "action": "reloadDefinition" }
       ]
+    },
+    {
+      "id": "tabCloud",
+      "title": "Remote Services (Inactive)",
+      "disabled": true,
+      "sections": []
     }
   ],
   "statusBar": {
     "panels": [
-      { "bind": "statusMessage", "flexGrow": true },
-      { "text": "Native JSON UI Engine", "width": "11rem" }
+      { "bind": "${statusMessage}", "flexGrow": true },
+      { "text": "ClearBatch v2.0 Engine", "width": "12rem" }
+    ]
+  },
+  "actions": {
+    "showAbout": [
+      {
+        "task": "dialog",
+        "dialogType": "about",
+        "title": "About ClearBatch",
+        "message": "ClearBatch Declarative UI & Automation Engine\nVersion 2.0 (Build 2600)\nRuns native Windows XP Win32 controls from pure JSON definitions."
+      }
+    ],
+    "resetScores": [
+      { "task": "set", "key": "cpuScore", "value": "Pending test..." },
+      { "task": "set", "key": "memoryScore", "value": "Pending test..." },
+      { "task": "set", "key": "diskScore", "value": "Pending test..." },
+      { "task": "set", "key": "benchProgress", "value": 0 },
+      { "task": "set", "key": "statusMessage", "value": "Benchmark scores reset." }
+    ],
+    "clearLog": [
+      { "task": "set", "key": "logOutput", "value": "[Execution log cleared]\n" },
+      { "task": "set", "key": "statusMessage", "value": "Log cleared." }
     ]
   }
 }

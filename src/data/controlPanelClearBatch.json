@@ -1,0 +1,172 @@
+{
+  "type": "ClearBatchApp",
+  "version": "2.0",
+  "meta": {
+    "name": "Control Panel",
+    "author": "Microsoft Corporation / ClearBatch Runtime",
+    "description": "System Control Center, Device Configurator and Security Management"
+  },
+  "window": {
+    "title": "Control Panel",
+    "width": 720,
+    "height": 540,
+    "icon": "https://img.icons8.com/color/48/000000/control-panel.png"
+  },
+  "initialState": {
+    "firewallStatus": "Active & Monitored",
+    "avStatus": "Real-time Shield Enabled",
+    "updatesStatus": "Configured (Automatic)",
+    "clearbatchStatus": "ClearBatch v2.0 Declarative Engine Ready",
+    "statusMessage": "Choose a category or launch an applet"
+  },
+  "menu": [
+    {
+      "text": "File",
+      "items": [
+        { "text": "Close", "action": "closeWindow" }
+      ]
+    },
+    {
+      "text": "View",
+      "items": [
+        { "text": "Refresh", "action": "refreshStatus" }
+      ]
+    },
+    {
+      "text": "Help",
+      "items": [
+        { "text": "About Control Panel", "action": "showAbout" }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "tabCategories",
+      "title": "Category View",
+      "sections": [
+        {
+          "type": "group",
+          "title": "Pick a category",
+          "fields": [
+            {
+              "id": "btnAppearance",
+              "type": "button",
+              "label": "Appearance and Themes",
+              "buttonText": "Change Desktop Theme or Screen Saver",
+              "action": "openDisplay"
+            },
+            {
+              "id": "btnSecurity",
+              "type": "button",
+              "label": "Security Center",
+              "buttonText": "Configure Firewall & Antivirus Protection",
+              "action": "openSecurityCenter"
+            },
+            {
+              "id": "btnNetwork",
+              "type": "button",
+              "label": "Network and Connections",
+              "buttonText": "Manage Network Adapters & Internet Settings",
+              "action": "openNetwork"
+            },
+            {
+              "id": "btnPrograms",
+              "type": "button",
+              "label": "Add or Remove Programs",
+              "buttonText": "Install or Uninstall System Applications",
+              "action": "openAddRemove"
+            },
+            {
+              "id": "btnSystem",
+              "type": "button",
+              "label": "Performance & Maintenance",
+              "buttonText": "View System Specs & Hardware Configuration",
+              "action": "openSystem"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tabClassic",
+      "title": "Classic View",
+      "sections": [
+        {
+          "type": "group",
+          "title": "All Control Panel Applets",
+          "fields": [
+            {
+              "id": "btnRegedit",
+              "type": "button",
+              "label": "System Registry Editor",
+              "buttonText": "Launch Registry Editor (RegEdit)",
+              "action": "openRegedit"
+            },
+            {
+              "id": "btnTaskMgr",
+              "type": "button",
+              "label": "Task Manager",
+              "buttonText": "View Processes & System Performance",
+              "action": "openTaskMgr"
+            },
+            {
+              "id": "btnCmd",
+              "type": "button",
+              "label": "Command Prompt",
+              "buttonText": "Launch Command Line Interpreter (cmd.exe)",
+              "action": "openCmd"
+            },
+            {
+              "id": "btnNotepad",
+              "type": "button",
+              "label": "Text Editor",
+              "buttonText": "Launch Notepad",
+              "action": "openNotepad"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tabHealth",
+      "title": "System Health & Diagnostics",
+      "sections": [
+        {
+          "type": "group",
+          "title": "System Status Overview",
+          "fields": [
+            {
+              "id": "sysSummary",
+              "type": "summary",
+              "items": [
+                { "label": "Operating System", "bind": "${$OS}" },
+                { "label": "Registered User", "bind": "${$USER}" },
+                { "label": "System Clock", "bind": "${$DATE} ${$TIME}" },
+                { "label": "Windows Firewall", "bind": "${firewallStatus}" },
+                { "label": "Antivirus Protection", "bind": "${avStatus}" },
+                { "label": "Automatic Updates", "bind": "${updatesStatus}" },
+                { "label": "UI Engine", "bind": "${clearbatchStatus}" }
+              ]
+            }
+          ]
+        }
+      ],
+      "actions": [
+        { "id": "btnAudit", "text": "Run Security Audit", "isDefault": true, "action": "runAudit" },
+        { "id": "btnClean", "text": "Quick Maintenance", "action": "runMaintenance" }
+      ]
+    },
+    {
+      "id": "tabHardware",
+      "title": "Hardware & Devices (Inactive)",
+      "disabled": true,
+      "sections": []
+    }
+  ],
+  "statusBar": {
+    "panels": [
+      { "bind": "${statusMessage}", "flexGrow": true },
+      { "text": "Control Panel (ClearBatch)", "width": "14rem" }
+    ]
+  }
+}

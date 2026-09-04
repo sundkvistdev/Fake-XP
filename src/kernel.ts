@@ -538,7 +538,7 @@ export class Kernel implements IKernel {
     public showDialog(options: DialogOptions): AppInstance | null {
         const container = document.createElement('div');
         Object.assign(container.style, {
-            padding: '1rem',
+            padding: '0.875rem 1rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '0.75rem',
@@ -564,6 +564,9 @@ export class Kernel implements IKernel {
             if (options.type === 'error') iconUrl = 'https://img.icons8.com/color/48/000000/error.png';
             if (options.type === 'confirm') iconUrl = 'https://img.icons8.com/color/48/000000/help.png';
             if (options.type === 'warning') iconUrl = 'https://img.icons8.com/color/48/000000/warning-shield.png';
+            if (options.type === 'colorPicker') iconUrl = 'https://img.icons8.com/color/48/000000/paint-palette.png';
+            if (options.type === 'findReplace') iconUrl = 'https://img.icons8.com/color/48/000000/find-and-replace.png';
+            if (options.type === 'about') iconUrl = 'https://img.icons8.com/color/48/000000/windows-xp.png';
         }
         
         const icon = document.createElement('img');
@@ -583,7 +586,7 @@ export class Kernel implements IKernel {
             color: '#000000',
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
-            maxHeight: '16rem',
+            maxHeight: '18rem',
             overflowY: 'auto'
         });
         msg.innerText = options.message || '';
@@ -598,6 +601,169 @@ export class Kernel implements IKernel {
                 style: { width: '100%', boxSizing: 'border-box' }
             });
             container.appendChild(input.el);
+        }
+
+        let selectedColor = options.colorValue || '#000080';
+        if (options.type === 'colorPicker') {
+            const colorWrap = document.createElement('div');
+            Object.assign(colorWrap.style, {
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.5rem',
+                padding: '0.375rem',
+                border: '1px solid #7f9db9',
+                background: '#ffffff'
+            });
+
+            const palette = [
+                '#000000', '#808080', '#800000', '#808000', '#008000', '#008080', '#000080', '#800080',
+                '#ffffff', '#c0c0c0', '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff'
+            ];
+            const grid = document.createElement('div');
+            Object.assign(grid.style, {
+                display: 'grid',
+                gridTemplateColumns: 'repeat(8, 1.5rem)',
+                gap: '0.25rem',
+                justifyContent: 'center'
+            });
+
+            const preview = document.createElement('div');
+            Object.assign(preview.style, {
+                width: '2rem',
+                height: '1.25rem',
+                background: selectedColor,
+                border: '1px solid #000000'
+            });
+
+            const hexInput = document.createElement('input');
+            hexInput.className = 'xp-input';
+            hexInput.value = selectedColor;
+            hexInput.style.width = '6rem';
+            hexInput.oninput = () => {
+                selectedColor = hexInput.value;
+                preview.style.background = selectedColor;
+            };
+
+            palette.forEach(c => {
+                const swatch = document.createElement('div');
+                Object.assign(swatch.style, {
+                    width: '1.5rem',
+                    height: '1.5rem',
+                    background: c,
+                    border: '1px solid #aca899',
+                    cursor: 'pointer'
+                });
+                swatch.onclick = () => {
+                    selectedColor = c;
+                    preview.style.background = c;
+                    hexInput.value = c;
+                };
+                grid.appendChild(swatch);
+            });
+
+            const hexRow = document.createElement('div');
+            hexRow.style.display = 'flex';
+            hexRow.style.alignItems = 'center';
+            hexRow.style.gap = '0.5rem';
+            const hexLbl = document.createElement('span');
+            hexLbl.innerText = 'Color:';
+            hexRow.appendChild(hexLbl);
+            hexRow.appendChild(preview);
+            hexRow.appendChild(hexInput);
+
+            colorWrap.appendChild(grid);
+            colorWrap.appendChild(hexRow);
+            container.appendChild(colorWrap);
+        }
+
+        let findInput: HTMLInputElement | undefined;
+        let replaceInput: HTMLInputElement | undefined;
+        let matchCaseChk: HTMLInputElement | undefined;
+        if (options.type === 'findReplace') {
+            const frWrap = document.createElement('div');
+            Object.assign(frWrap.style, {
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.375rem'
+            });
+
+            const fRow = document.createElement('div');
+            fRow.style.display = 'flex';
+            fRow.style.alignItems = 'center';
+            fRow.style.gap = '0.5rem';
+            const fLbl = document.createElement('span');
+            fLbl.innerText = 'Find:';
+            fLbl.style.minWidth = '4.5rem';
+            findInput = document.createElement('input');
+            findInput.className = 'xp-input';
+            findInput.style.flex = '1';
+            findInput.value = options.value || '';
+            fRow.appendChild(fLbl);
+            fRow.appendChild(findInput);
+            frWrap.appendChild(fRow);
+
+            const rRow = document.createElement('div');
+            rRow.style.display = 'flex';
+            rRow.style.alignItems = 'center';
+            rRow.style.gap = '0.5rem';
+            const rLbl = document.createElement('span');
+            rLbl.innerText = 'Replace with:';
+            rLbl.style.minWidth = '4.5rem';
+            replaceInput = document.createElement('input');
+            replaceInput.className = 'xp-input';
+            replaceInput.style.flex = '1';
+            rRow.appendChild(rLbl);
+            rRow.appendChild(replaceInput);
+            frWrap.appendChild(rRow);
+
+            const chkRow = document.createElement('div');
+            chkRow.style.display = 'flex';
+            chkRow.style.alignItems = 'center';
+            chkRow.style.gap = '0.375rem';
+            matchCaseChk = document.createElement('input');
+            matchCaseChk.type = 'checkbox';
+            const chkLbl = document.createElement('label');
+            chkLbl.innerText = 'Match case';
+            chkRow.appendChild(matchCaseChk);
+            chkRow.appendChild(chkLbl);
+            frWrap.appendChild(chkRow);
+
+            container.appendChild(frWrap);
+        }
+
+        let detailsBox: HTMLTextAreaElement | null = null;
+        if (options.type === 'details' || options.detailsText) {
+            const detailsToggle = document.createElement('button');
+            detailsToggle.className = 'xp-button';
+            detailsToggle.innerText = 'Details >>';
+            detailsToggle.style.alignSelf = 'flex-start';
+
+            detailsBox = document.createElement('textarea');
+            detailsBox.className = 'xp-input';
+            Object.assign(detailsBox.style, {
+                width: '100%',
+                height: '7rem',
+                fontFamily: 'Consolas, monospace',
+                fontSize: '0.75rem',
+                boxSizing: 'border-box',
+                display: 'none',
+                marginTop: '0.375rem'
+            });
+            detailsBox.readOnly = true;
+            detailsBox.value = options.detailsText || 'No diagnostic details available.';
+
+            detailsToggle.onclick = () => {
+                const isOpen = detailsBox!.style.display === 'block';
+                detailsBox!.style.display = isOpen ? 'none' : 'block';
+                detailsToggle.innerText = isOpen ? 'Details >>' : '<< Hide Details';
+                if (win) {
+                    const currentH = win.element.offsetHeight;
+                    win.element.style.height = `${currentH + (isOpen ? -120 : 120)}px`;
+                }
+            };
+
+            container.appendChild(detailsToggle);
+            container.appendChild(detailsBox);
         }
 
         if (options.multiSelect) {
@@ -647,13 +813,25 @@ export class Kernel implements IKernel {
         okBtn.style.minWidth = '5.25rem';
         okBtn.onclick = () => {
             if (options.onOk) {
-                options.onOk(options.type === 'prompt' && input ? (input as unknown as { getValue: () => string }).getValue() : true);
+                let returnVal: unknown = true;
+                if (options.type === 'prompt' && input) {
+                    returnVal = (input as unknown as { getValue: () => string }).getValue();
+                } else if (options.type === 'colorPicker') {
+                    returnVal = selectedColor;
+                } else if (options.type === 'findReplace') {
+                    returnVal = {
+                        find: findInput?.value || '',
+                        replace: replaceInput?.value || '',
+                        matchCase: !!matchCaseChk?.checked
+                    };
+                }
+                options.onOk(returnVal);
             }
             if (win) win.close();
         };
         btnContainer.appendChild(okBtn);
 
-        if (options.type === 'confirm' || options.type === 'prompt' || options.showCancel) {
+        if (options.type === 'confirm' || options.type === 'prompt' || options.type === 'findReplace' || options.showCancel) {
             const cancelBtn = document.createElement('button');
             cancelBtn.innerText = options.cancelText || 'Cancel';
             cancelBtn.className = 'xp-button';
@@ -665,31 +843,42 @@ export class Kernel implements IKernel {
             btnContainer.appendChild(cancelBtn);
         }
 
-        win = this.WindowManager.createElement({
-            id: 'dialog-' + Math.random().toString(36).substring(2, 9)
-        }) as unknown as AppInstance;
-
-        let computedHeight = 175;
-        if (options.type === 'prompt') computedHeight = 210;
-        else if (options.multiSelect) computedHeight = 280;
-        else if (options.dropdown) computedHeight = 215;
-        else if (options.type === 'progress') computedHeight = 190;
-
-        const lines = (options.message || '').split('\n').length;
-        if (lines > 2) {
-            computedHeight += Math.min(100, (lines - 2) * 20);
-        } else if ((options.message || '').length > 100) {
-            computedHeight += 30;
+        // Dynamic Sizing calculation to accommodate large text and custom types
+        let dialogWidth = options.width || 420;
+        const msgLen = (options.message || '').length;
+        if (!options.width) {
+            if (msgLen > 400) dialogWidth = 520;
+            else if (msgLen > 180) dialogWidth = 470;
         }
+
+        const charsPerLine = Math.floor((dialogWidth - 90) / 7.5);
+        const rawLines = (options.message || '').split('\n');
+        let totalLineCount = 0;
+        rawLines.forEach(l => {
+            totalLineCount += Math.max(1, Math.ceil((l.length || 1) / charsPerLine));
+        });
+
+        let computedHeight = 125 + (totalLineCount * 19);
+        if (options.type === 'prompt') computedHeight += 50;
+        else if (options.multiSelect) computedHeight += 135;
+        else if (options.dropdown) computedHeight += 50;
+        else if (options.type === 'progress') computedHeight += 50;
+        else if (options.type === 'colorPicker') computedHeight += 140;
+        else if (options.type === 'findReplace') computedHeight += 115;
+        else if (options.type === 'details') computedHeight += 35;
+        else if (options.type === 'about') computedHeight += 80;
+
+        // Retain sensible minimum and maximum bound
+        computedHeight = Math.max(165, Math.min(540, computedHeight));
 
         const winId = this.WindowManager.createWindow({
             title: options.title || 'System Message',
-            width: options.width || 400,
+            width: dialogWidth,
             height: options.height || computedHeight,
             isDialog: true,
             content: container,
             type: options.modal ? 'modal' : (options.topmodal ? 'topmodal' : 'normal'),
-            resizable: !!options.resizable
+            resizable: options.resizable !== undefined ? options.resizable : totalLineCount > 6
         });
         
         win = this.WindowManager.getById(winId);

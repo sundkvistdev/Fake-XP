@@ -634,6 +634,52 @@ export class CentralComponentFramework implements IFCCF {
                 if (p.id) panelsMap.set(p.id, span);
             });
 
+            // Feature resize grip on status strip with full pointer capture
+            const grip = document.createElement('div');
+            grip.className = 'statusbar-resize-grip';
+            grip.title = 'Resize window';
+            grip.onpointerdown = (e: PointerEvent) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const winEl = bar.closest('.window') as HTMLElement;
+                if (!winEl) return;
+                try {
+                    grip.setPointerCapture(e.pointerId);
+                } catch {
+                    // Ignore
+                }
+                const startWidth = winEl.offsetWidth;
+                const startHeight = winEl.offsetHeight;
+                const startX = e.clientX;
+                const startY = e.clientY;
+
+                const onPointerMove = (moveEvent: PointerEvent) => {
+                    const isDialog = winEl.classList.contains('dialog');
+                    const minW = isDialog ? 320 : 200;
+                    const minH = isDialog ? 150 : 120;
+                    winEl.style.width = Math.max(minW, startWidth + (moveEvent.clientX - startX)) + 'px';
+                    winEl.style.height = Math.max(minH, startHeight + (moveEvent.clientY - startY)) + 'px';
+                };
+
+                const onPointerUp = (upEvent: PointerEvent) => {
+                    try {
+                        if (grip.hasPointerCapture(upEvent.pointerId)) {
+                            grip.releasePointerCapture(upEvent.pointerId);
+                        }
+                    } catch {
+                        // Ignore
+                    }
+                    window.removeEventListener('pointermove', onPointerMove);
+                    window.removeEventListener('pointerup', onPointerUp);
+                    window.removeEventListener('pointercancel', onPointerUp);
+                };
+
+                window.addEventListener('pointermove', onPointerMove);
+                window.addEventListener('pointerup', onPointerUp);
+                window.addEventListener('pointercancel', onPointerUp);
+            };
+            bar.appendChild(grip);
+
             const setPanelText = (indexOrId: number | string, text: string) => {
                 const el = panelsMap.get(indexOrId);
                 if (el) el.innerText = text;
@@ -717,8 +763,10 @@ export class CentralComponentFramework implements IFCCF {
             container.appendChild(header);
             container.appendChild(body);
 
-            let activeId = options.activeTabId || (options.tabs[0]?.id || '');
-            const tabButtons: Map<string, HTMLElement> = new Map();
+            // Choose first non-disabled tab as initial active tab if not specified
+            const firstEnabled = options.tabs.find(t => !t.disabled)?.id || options.tabs[0]?.id || '';
+            let activeId = options.activeTabId || firstEnabled;
+            const tabButtons: Map<string, HTMLButtonElement> = new Map();
             const tabContents: Map<string, HTMLElement> = new Map();
 
             const render = () => {
@@ -727,11 +775,16 @@ export class CentralComponentFramework implements IFCCF {
 
                 options.tabs.forEach(tab => {
                     const btn = document.createElement('button');
-                    btn.className = `xp-tab-btn ${tab.id === activeId ? 'active' : ''}`;
+                    btn.className = `xp-tab-btn ${tab.id === activeId ? 'active' : ''} ${tab.disabled ? 'disabled' : ''}`;
                     btn.innerText = tab.title;
-                    btn.onclick = () => {
-                        setActiveTab(tab.id);
-                    };
+                    if (tab.disabled) {
+                        btn.disabled = true;
+                        btn.title = 'This section is currently unavailable';
+                    } else {
+                        btn.onclick = () => {
+                            setActiveTab(tab.id);
+                        };
+                    }
                     header.appendChild(btn);
                     tabButtons.set(tab.id, btn);
 
@@ -745,6 +798,9 @@ export class CentralComponentFramework implements IFCCF {
             };
 
             const setActiveTab = (id: string) => {
+                const targetTab = options.tabs.find(t => t.id === id);
+                if (targetTab && targetTab.disabled) return;
+
                 activeId = id;
                 tabButtons.forEach((btn, tId) => {
                     if (tId === id) btn.classList.add('active');
@@ -756,10 +812,31 @@ export class CentralComponentFramework implements IFCCF {
                 if (options.onTabChange) options.onTabChange(id);
             };
 
+            const setTabDisabled = (id: string, disabled: boolean) => {
+                const tab = options.tabs.find(t => t.id === id);
+                if (tab) tab.disabled = disabled;
+                const btn = tabButtons.get(id);
+                if (btn) {
+                    btn.disabled = disabled;
+                    if (disabled) {
+                        btn.classList.add('disabled');
+                        btn.classList.remove('active');
+                        btn.onclick = null;
+                        if (activeId === id) {
+                            const next = options.tabs.find(t => !t.disabled && t.id !== id);
+                            if (next) setActiveTab(next.id);
+                        }
+                    } else {
+                        btn.classList.remove('disabled');
+                        btn.onclick = () => setActiveTab(id);
+                    }
+                }
+            };
+
             const getActiveTab = () => activeId;
 
             render();
-            return this.createComponent(container, { setActiveTab, getActiveTab });
+            return this.createComponent(container, { setActiveTab, getActiveTab, setTabDisabled });
         },
 
         ListView: <T = Record<string, unknown>>(options: ListViewOptions<T>): ListViewComponent<T> => {

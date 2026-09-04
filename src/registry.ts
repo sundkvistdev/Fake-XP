@@ -1,4 +1,5 @@
 import { IRegistry, IKernel } from './types';
+import registryInitialData from './data/registryInitialImage.json';
 
 export class Registry implements IRegistry {
     private readonly kernel: IKernel;
@@ -18,71 +19,7 @@ export class Registry implements IRegistry {
         const vfs = this.kernel.VFS;
         const data = vfs.readFile(this.registryPath);
         if (!data) {
-            const initial: Record<string, unknown> = {
-                System: { 
-                    Version: '5.1.2600', 
-                    Owner: 'Administrator', 
-                    Theme: 'Luna', 
-                    Wallpaper: 'https://picsum.photos/seed/bliss/1920/1080',
-                    BootTime: Date.now(),
-                    ShowClock: true,
-                    TaskbarSize: 30,
-                    DesktopIconSize: 48,
-                    ComputerName: 'XP-RETRO-PC',
-                    RegisteredOrganization: 'Retro Corp',
-                    InstallDate: '2001-10-25',
-                    Associations: {
-                        'txt': 'notepad',
-                        'js': 'ADR',
-                        'ts': 'ADR',
-                        'lnk': 'shell',
-                        'bmp': 'paint',
-                        'png': 'paint',
-                        'jpg': 'paint',
-                        'mp3': 'music',
-                        'wav': 'music',
-                        'reg': 'regedit',
-                        'cb': 'clearbatch',
-                        'clrb': 'clearbatch',
-                        'json': 'clearbatch'
-                    }
-                },
-                Security: {
-                    Firewall: { Enabled: true, Exceptions: ['Remote Assistance', 'UPnP Framework'] },
-                    AutomaticUpdates: { Enabled: true, Option: 'automatic', Schedule: 'Daily at 03:00' },
-                    Antivirus: { LastScan: null, AutoProtect: true, DatabaseVersion: '2026.04.12' },
-                    Users: {
-                        'Administrator': {
-                            username: 'Administrator',
-                            passwordHash: '910de084', // 12345678
-                            privilege: 'admin',
-                            avatar: 'https://img.icons8.com/color/48/000000/administrator-male.png'
-                        },
-                        'User': {
-                            username: 'User',
-                            passwordHash: '170842', // 1234
-                            privilege: 'user',
-                            avatar: 'https://img.icons8.com/color/48/000000/user.png'
-                        },
-                        'Guest': {
-                            username: 'Guest',
-                            passwordHash: '',
-                            privilege: 'guest',
-                            avatar: 'https://img.icons8.com/color/48/000000/guest-male.png'
-                        }
-                    },
-                    UACEnabled: true,
-                    CurrentSession: null
-                },
-                Apps: {
-                    Notepad: { LastFile: '', FontSize: 12, FontColor: '#000000', WordWrap: true, StatusBar: true },
-                    Explorer: { ShowHidden: false, ViewMode: 'icons', ConfirmDelete: true },
-                    Calculator: { Mode: 'standard', Precision: 10 },
-                    Antivirus: { LastScan: null, AutoProtect: true, DatabaseVersion: '2026.04.12' },
-                    Paint: { PrimaryColor: '#000000', SecondaryColor: '#ffffff', BrushSize: 2 },
-                    CommonDialogs: { LastDir: 'C:/Documents' }
-                }
-            };
+            const initial = JSON.parse(JSON.stringify(registryInitialData)) as Record<string, unknown>;
             this._cachedImage = initial;
             vfs.writeFile(this.registryPath, JSON.stringify(initial, null, 2));
             return this._cachedImage;
@@ -166,6 +103,10 @@ export class Registry implements IRegistry {
             return Object.keys(val);
         }
         return [];
+    }
+
+    public getKeys(path: string): string[] {
+        return this.keys(path);
     }
 
     public observe<T = unknown>(path: string, callback: (newVal: T) => void): () => void {

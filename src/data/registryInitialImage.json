@@ -1,0 +1,108 @@
+{
+  "System": {
+    "Version": "5.1.2600",
+    "Owner": "Administrator",
+    "Theme": "Luna",
+    "Wallpaper": "https://picsum.photos/seed/bliss/1920/1080",
+    "BootTime": 1714000000000,
+    "ShowClock": true,
+    "TaskbarSize": 30,
+    "DesktopIconSize": 48,
+    "ComputerName": "XP-RETRO-PC",
+    "RegisteredOrganization": "Retro Corp",
+    "InstallDate": "2001-10-25",
+    "Associations": {
+      "txt": "notepad",
+      "js": "ADR",
+      "ts": "ADR",
+      "lnk": "shell",
+      "bmp": "paint",
+      "png": "paint",
+      "jpg": "paint",
+      "mp3": "music",
+      "wav": "music",
+      "reg": "regedit",
+      "cb": "clearbatch",
+      "clrb": "clearbatch",
+      "json": "clearbatch"
+    }
+  },
+  "Security": {
+    "Firewall": {
+      "Enabled": true,
+      "Exceptions": [
+        "Remote Assistance",
+        "UPnP Framework",
+        "ClearBatch Diagnostics"
+      ]
+    },
+    "AutomaticUpdates": {
+      "Enabled": true,
+      "Option": "automatic",
+      "Schedule": "Daily at 03:00"
+    },
+    "Antivirus": {
+      "LastScan": null,
+      "AutoProtect": true,
+      "DatabaseVersion": "2026.04.12"
+    },
+    "Users": {
+      "Administrator": {
+        "username": "Administrator",
+        "passwordHash": "910de084",
+        "privilege": "admin",
+        "avatar": "https://img.icons8.com/color/48/000000/administrator-male.png"
+      },
+      "User": {
+        "username": "User",
+        "passwordHash": "170842",
+        "privilege": "user",
+        "avatar": "https://img.icons8.com/color/48/000000/user.png"
+      },
+      "Guest": {
+        "username": "Guest",
+        "passwordHash": "",
+        "privilege": "guest",
+        "avatar": "https://img.icons8.com/color/48/000000/guest-male.png"
+      }
+    },
+    "UACEnabled": true,
+    "CurrentSession": null
+  },
+  "Apps": {
+    "Notepad": {
+      "LastFile": "",
+      "FontSize": 12,
+      "FontColor": "#000000",
+      "WordWrap": true,
+      "StatusBar": true
+    },
+    "Explorer": {
+      "ShowHidden": false,
+      "ViewMode": "icons",
+      "ConfirmDelete": true
+    },
+    "Calculator": {
+      "Mode": "standard",
+      "Precision": 10
+    },
+    "Antivirus": {
+      "LastScan": null,
+      "AutoProtect": true,
+      "DatabaseVersion": "2026.04.12"
+    },
+    "Paint": {
+      "PrimaryColor": "#000000",
+      "SecondaryColor": "#ffffff",
+      "BrushSize": 2
+    },
+    "CommonDialogs": {
+      "LastDir": "C:/Documents"
+    },
+    "ClearBatch": {
+      "AutoValidate": true,
+      "VerboseLog": true,
+      "DefaultTimeout": 3000
+    }
+  }
+}

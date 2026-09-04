@@ -1,0 +1,62 @@
+{
+  "type": "ClearBatchApp",
+  "version": "2.0",
+  "meta": {
+    "name": "Registry Editor",
+    "author": "Microsoft Corporation / ClearBatch Runtime",
+    "description": "System Configuration & Registry Manager with Lazy-Loaded TreeView"
+  },
+  "window": {
+    "title": "Registry Editor",
+    "width": 720,
+    "height": 520,
+    "icon": "https://img.icons8.com/color/48/000000/registry-editor.png"
+  },
+  "initialState": {
+    "selectedKeyPath": "HKEY_LOCAL_MACHINE/System",
+    "statusPath": "My Computer\\HKEY_LOCAL_MACHINE\\System",
+    "valueCount": 0,
+    "quickFilter": "",
+    "statusMessage": "Ready."
+  },
+  "menu": [
+    {
+      "text": "File",
+      "items": [
+        { "text": "Import Registry File...", "action": "importReg" },
+        { "text": "Export Branch...", "action": "exportReg" },
+        { "separator": true },
+        { "text": "Exit", "action": "closeWindow" }
+      ]
+    },
+    {
+      "text": "Edit",
+      "items": [
+        { "text": "New Key...", "action": "newKey" },
+        { "text": "New String Value...", "action": "newStringValue" },
+        { "text": "New DWORD Value...", "action": "newDwordValue" },
+        { "separator": true },
+        { "text": "Modify Selected Value...", "action": "modifyValue" },
+        { "text": "Delete Selected...", "action": "deleteValue" }
+      ]
+    },
+    {
+      "text": "View",
+      "items": [
+        { "text": "Refresh (F5)", "action": "refreshRegistry" }
+      ]
+    },
+    {
+      "text": "Help",
+      "items": [
+        { "text": "About Registry Editor", "action": "showAbout" }
+      ]
+    }
+  ],
+  "statusBar": {
+    "panels": [
+      { "bind": "${statusPath}", "flexGrow": true },
+      { "bind": "${valueCount} value(s) in hive", "width": "11rem" }
+    ]
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "C:": {
+    "type": "dir",
+    "children": {
+      "Desktop": {
+        "type": "dir",
+        "children": {
+          "My Computer.lnk": { "type": "file", "content": "{\"app\":\"explorer\",\"args\":\"C:\"}", "isLink": true },
+          "My Documents.lnk": { "type": "file", "content": "{\"app\":\"explorer\",\"args\":\"C:/Documents\"}", "isLink": true },
+          "Notepad.lnk": { "type": "file", "content": "{\"app\":\"notepad\",\"args\":\"\"}", "isLink": true },
+          "Command Prompt.lnk": { "type": "file", "content": "{\"app\":\"cmd\",\"args\":\"\"}", "isLink": true },
+          "Paint.lnk": { "type": "file", "content": "{\"app\":\"paint\",\"args\":\"\"}", "isLink": true },
+          "Music Player.lnk": { "type": "file", "content": "{\"app\":\"music\",\"args\":\"\"}", "isLink": true },
+          "Minesweeper.lnk": { "type": "file", "content": "{\"app\":\"minesweeper\",\"args\":\"\"}", "isLink": true },
+          "Solitaire.lnk": { "type": "file", "content": "{\"app\":\"solitaire\",\"args\":\"\"}", "isLink": true },
+          "ClearBatch Demo.lnk": { "type": "file", "content": "{\"app\":\"clearbatch\",\"args\":\"\"}", "isLink": true },
+          "Security Center.lnk": { "type": "file", "content": "{\"app\":\"securityCenter\",\"args\":\"\"}", "isLink": true },
+          "Registry Editor.lnk": { "type": "file", "content": "{\"app\":\"regedit\",\"args\":\"\"}", "isLink": true },
+          "Control Panel.lnk": { "type": "file", "content": "{\"app\":\"control\",\"args\":\"\"}", "isLink": true },
+          "ReadMe.txt": {
+            "type": "file",
+            "content": "Welcome to Windows XP!\n\nThis system features a full Win32 component framework, virtual filesystem, registry, and application execution environment.\n\nEnjoy the classic experience!",
+            "metadata": { "owner": "Administrator", "permissions": "644" }
+          },
+          "Virus.exe": {
+            "type": "file",
+            "content": "MALWARE_SIGNATURE: Trojan.Win32.Generic",
+            "metadata": { "owner": "User", "permissions": "777" }
+          }
+        }
+      },
+      "StartMenu": {
+        "type": "dir",
+        "children": {
+          "Notepad.lnk": { "type": "file", "content": "{\"app\":\"notepad\",\"args\":\"\"}", "isLink": true },
+          "Command Prompt.lnk": { "type": "file", "content": "{\"app\":\"cmd\",\"args\":\"\"}", "isLink": true },
+          "Calculator.lnk": { "type": "file", "content": "{\"app\":\"calc\",\"args\":\"\"}", "isLink": true },
+          "Paint.lnk": { "type": "file", "content": "{\"app\":\"paint\",\"args\":\"\"}", "isLink": true },
+          "Music Player.lnk": { "type": "file", "content": "{\"app\":\"music\",\"args\":\"\"}", "isLink": true },
+          "Minesweeper.lnk": { "type": "file", "content": "{\"app\":\"minesweeper\",\"args\":\"\"}", "isLink": true },
+          "Solitaire.lnk": { "type": "file", "content": "{\"app\":\"solitaire\",\"args\":\"\"}", "isLink": true },
+          "Registry Editor.lnk": { "type": "file", "content": "{\"app\":\"regedit\",\"args\":\"\"}", "isLink": true },
+          "Control Panel.lnk": { "type": "file", "content": "{\"app\":\"control\",\"args\":\"\"}", "isLink": true },
+          "Security Center.lnk": { "type": "file", "content": "{\"app\":\"securityCenter\",\"args\":\"\"}", "isLink": true },
+          "ClearBatch Studio.lnk": { "type": "file", "content": "{\"app\":\"clearbatch\",\"args\":\"\"}", "isLink": true },
+          "CentralFirm Antivirus.lnk": { "type": "file", "content": "{\"app\":\"antivirus\",\"args\":\"\"}", "isLink": true }
+        }
+      },
+      "Documents": {
+        "type": "dir",
+        "children": {
+          "readme.txt": {
+            "type": "file",
+            "content": "Welcome to Windows XP Documents!\n\nYou can create, edit, save and organize your documents here.\nAll applications integrate directly with this Virtual File System and Registry."
+          },
+          "Todo.txt": {
+            "type": "file",
+            "content": "1. Explore Control Panel\n2. Set custom wallpaper in Display Properties\n3. Play Minesweeper and Solitaire\n4. Scan files with Antivirus\n5. Draw graphics in Paint\n6. Run ClearBatch System Diagnostics\n7. Inspect Registry with ClearBatch RegEdit"
+          },
+          "Diagnostics.cb": {
+            "type": "file",
+            "content": "{\n  \"type\": \"ClearBatchApp\",\n  \"version\": \"1.0\",\n  \"meta\": {\n    \"name\": \"Quick System Health Check\",\n    \"author\": \"Microsoft Corporation\",\n    \"description\": \"Automated declarative diagnostics for Windows XP\"\n  },\n  \"window\": {\n    \"title\": \"Quick System Health Check\",\n    \"width\": 480,\n    \"height\": 380\n  },\n  \"initialState\": {\n    \"vfsStatus\": \"Optimal\",\n    \"regStatus\": \"Synchronized\",\n    \"secStatus\": \"Protected\",\n    \"score\": 100\n  },\n  \"sections\": [\n    {\n      \"title\": \"Automated Diagnostic\",\n      \"controls\": [\n        {\n          \"type\": \"summary\",\n          \"items\": [\n            { \"label\": \"VFS Integrity\", \"value\": \"${vfsStatus}\" },\n            { \"label\": \"ADR Runtime\", \"value\": \"${regStatus}\" },\n            { \"label\": \"Security Center\", \"value\": \"${secStatus}\" }\n          ]\n        },\n        {\n          \"type\": \"progress\",\n          \"label\": \"Overall System Reliability\",\n          \"value\": 100\n        },\n        {\n          \"type\": \"button\",\n          \"label\": \"Run Diagnostics Suite\",\n          \"action\": \"runBenchmark\"\n        }\n      ]\n    }\n  ]\n}"
+          },
+          "RegistryBackup.reg": {
+            "type": "file",
+            "content": "Windows Registry Editor Version 5.00\n\n[HKEY_LOCAL_MACHINE\\System]\n\"Version\"=\"5.1.2600\"\n\"Theme\"=\"Luna\"\n\"ComputerName\"=\"XP-RETRO-PC\"\n"
+          },
+          "virus_test.exe": {
+            "type": "file",
+            "content": "MALWARE_SIGNATURE: EICAR-STANDARD-ANTIVIRUS-TEST-FILE"
+          }
+        }
+      },
+      "Music": {
+        "type": "dir",
+        "children": {
+          "Beethoven Symphony No. 9.mp3": { "type": "file", "content": "AUDIO_STREAM: Beethoven Symphony No. 9 - Ode to Joy (192kbps)" },
+          "Chopin Nocturne.mp3": { "type": "file", "content": "AUDIO_STREAM: Chopin Nocturne Op. 9 No. 2 (320kbps)" },
+          "Title Theme.wav": { "type": "file", "content": "AUDIO_STREAM: Windows XP Startup Sound (1411kbps)" }
+        }
+      },
+      "Pictures": {
+        "type": "dir",
+        "children": {
+          "Bliss.bmp": { "type": "file", "content": "BITMAP_IMAGE: Windows XP Bliss Rolling Green Hills" },
+          "Red Desert.bmp": { "type": "file", "content": "BITMAP_IMAGE: Windows XP Red Moon Desert Sunset" }
+        }
+      },
+      "Program Files": {
+        "type": "dir",
+        "children": {
+          "CentralFirm": {
+            "type": "dir",
+            "children": {
+              "antivirus.exe": { "type": "file", "content": "CentralFirm Antivirus Engine Core Executable" },
+              "quarantine": { "type": "dir", "children": {} }
+            }
+          },
+          "Accessories": {
+            "type": "dir",
+            "children": {
+              "notepad.exe": { "type": "file", "content": "Microsoft Notepad Win32 Executable" },
+              "calc.exe": { "type": "file", "content": "Microsoft Calculator Win32 Executable" },
+              "mspaint.exe": { "type": "file", "content": "Microsoft Paint Win32 Executable" }
+            }
+          }
+        }
+      },
+      "Windows": {
+        "type": "dir",
+        "children": {
+          "System32": {
+            "type": "dir",
+            "children": {
+              "cmd.exe": { "type": "file", "content": "Windows Command Processor" },
+              "regedit.exe": { "type": "file", "content": "Windows Registry Editor" },
+              "taskmgr.exe": { "type": "file", "content": "Windows Task Manager" }
+            }
+          }
+        }
+      },
+      "System": {
+        "type": "dir",
+        "children": {
+          "sysconf.json": {
+            "type": "file",
+            "content": ""
+          },
+          "icache.json": {
+            "type": "file",
+            "content": "{}"
+          }
+        }
+      },
+      "Apps": {
+        "type": "dir",
+        "children": {}
+      }
+    }
+  }
+}
