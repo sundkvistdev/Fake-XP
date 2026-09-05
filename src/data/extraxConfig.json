@@ -1,0 +1,19 @@
+{
+  "viewModes": [
+    { "id": "categories", "label": "Category View" },
+    { "id": "icons", "label": "Large Icons" },
+    { "id": "tiles", "label": "Tiles" },
+    { "id": "details", "label": "Details" }
+  ],
+  "strings": {
+    "back": "◀ Back",
+    "forward": "Forward ▶",
+    "up": "▲ Up",
+    "address": "Address",
+    "go": "Go ➔",
+    "pickCategory": "Pick a category"
+  },
+  "icons": {
+    "defaultFolder": "https://img.icons8.com/color/16/000000/folder-invoices.png"
+  }
+}

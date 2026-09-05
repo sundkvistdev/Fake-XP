@@ -1,9 +1,11 @@
 import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
+import notepadData from '../src/data/notepadData.json';
 
 export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) {
     const npArgs = args as { filePath?: string } | undefined;
     const initialPath = npArgs?.filePath || (Array.isArray(args) && typeof args[0] === 'string' ? args[0] : '');
     
+    const s = notepadData.strings;
     const [getCurrentPath, setCurrentPath, subscribeCurrentPath] = FCCF.useState<string>(initialPath);
     const [getContent, setContent, subscribeContent] = FCCF.useState<string>(initialPath ? VFS.readFile(initialPath) || '' : '');
     const [isWordWrap, setWordWrap] = FCCF.useState<boolean>(XP_API.Registry.get<boolean>('Apps/Notepad/WordWrap', true));
@@ -33,9 +35,9 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     // Status Bar
     const statusBar = FCCF.Controls.StatusBar({
         panels: [
-            { text: 'Ln 1, Col 1', flexGrow: true },
-            { text: '100%', width: '3.75rem' },
-            { text: 'Windows (CRLF)', width: '7.5rem' }
+            { text: s.statusLineCol.replace('{line}', '1').replace('{col}', '1'), flexGrow: true },
+            { text: s.statusZoom, width: '3.75rem' },
+            { text: s.statusEncoding, width: '7.5rem' }
         ]
     });
 
@@ -44,7 +46,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         const lines = text.split('\n');
         const line = lines.length;
         const col = lines[lines.length - 1].length + 1;
-        statusBar.setPanelText(0, `Ln ${line}, Col ${col}`);
+        statusBar.setPanelText(0, s.statusLineCol.replace('{line}', String(line)).replace('{col}', String(col)));
     };
 
     txtInput.oninput = (e) => {
@@ -69,10 +71,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             mode: 'open',
             title: 'Open',
             initialPath: getCurrentPath(),
-            filters: [
-                { label: 'Text Documents (*.txt)', ext: 'txt' },
-                { label: 'All Files (*.*)', ext: '*' }
-            ],
+            filters: notepadData.fileFilters,
             onSelect: (selectedPath) => {
                 const data = VFS.readFile(selectedPath);
                 if (data !== null) {
@@ -90,7 +89,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         const path = getCurrentPath();
         if (path) {
             VFS.writeFile(path, getContent());
-            XP_API.showDialog({ title: 'Notepad', message: `File saved successfully to ${path}.`, type: 'info' });
+            XP_API.showDialog({ title: s.appTitle, message: s.savedSuccess.replace('{path}', path), type: 'info' });
         } else {
             handleSaveAs();
         }
@@ -101,20 +100,26 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             mode: 'save',
             title: 'Save As',
             initialPath: getCurrentPath() || 'C:/Documents',
-            defaultFileName: getCurrentPath() ? getCurrentPath().split('/').pop() : 'Untitled.txt',
-            filters: [
-                { label: 'Text Documents (*.txt)', ext: 'txt' },
-                { label: 'All Files (*.*)', ext: '*' }
-            ],
+            defaultFileName: getCurrentPath() ? getCurrentPath().split('/').pop() : `${s.untitled}.txt`,
+            filters: notepadData.fileFilters,
             onSelect: (selectedPath) => {
                 VFS.writeFile(selectedPath, getContent());
                 setCurrentPath(selectedPath);
                 updateTitle(selectedPath);
                 XP_API.Registry.set('Apps/Notepad/LastFile', selectedPath);
-                XP_API.showDialog({ title: 'Notepad', message: `File saved to ${selectedPath}.`, type: 'info' });
+                XP_API.showDialog({ title: s.appTitle, message: s.savedAs.replace('{path}', selectedPath), type: 'info' });
             }
         });
     };
+
+    const fontMenuItems = notepadData.fontSizes.map(f => ({
+        text: f.label,
+        action: () => {
+            setFontSize(f.size);
+            txtInput.style.fontSize = `${f.size}px`;
+            XP_API.Registry.set('Apps/Notepad/FontSize', f.size);
+        }
+    }));
 
     const menuStrip = FCCF.Controls.MenuStrip({
         items: [
@@ -126,8 +131,8 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                     { text: 'Save', shortcut: 'Ctrl+S', action: handleSave },
                     { text: 'Save As...', action: handleSaveAs },
                     { separator: true },
-                    { text: 'Page Setup...', action: () => XP_API.showDialog({ title: 'Page Setup', message: 'Paper size: Letter (8.5 x 11 in)\nOrientation: Portrait\nMargins: 0.75 in', type: 'info' }) },
-                    { text: 'Print...', shortcut: 'Ctrl+P', action: () => XP_API.showDialog({ title: 'Print', message: 'No local or network printer connected.', type: 'warning' }) },
+                    { text: 'Page Setup...', action: () => XP_API.showDialog({ title: s.pageSetupTitle, message: s.pageSetupMessage, type: 'info' }) },
+                    { text: 'Print...', shortcut: 'Ctrl+P', action: () => XP_API.showDialog({ title: s.printTitle, message: s.printMessage, type: 'warning' }) },
                     { separator: true },
                     { text: 'Exit', action: () => XP_API.closeWindow(winId) }
                 ]
@@ -171,18 +176,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                             XP_API.Registry.set('Apps/Notepad/WordWrap', next);
                         }
                     },
-                    {
-                        text: 'Font Size: 10 pt',
-                        action: () => { setFontSize(10); txtInput.style.fontSize = '10px'; XP_API.Registry.set('Apps/Notepad/FontSize', 10); }
-                    },
-                    {
-                        text: 'Font Size: 12 pt',
-                        action: () => { setFontSize(12); txtInput.style.fontSize = '12px'; XP_API.Registry.set('Apps/Notepad/FontSize', 12); }
-                    },
-                    {
-                        text: 'Font Size: 14 pt',
-                        action: () => { setFontSize(14); txtInput.style.fontSize = '14px'; XP_API.Registry.set('Apps/Notepad/FontSize', 14); }
-                    }
+                    ...fontMenuItems
                 ]
             },
             {
@@ -203,9 +197,9 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'Help',
                 menu: [
-                    { text: 'Help Topics', action: () => XP_API.showDialog({ title: 'Notepad Help', message: 'Notepad is a basic text editor that you can use to create simple documents.', type: 'info' }) },
+                    { text: 'Help Topics', action: () => XP_API.showDialog({ title: s.helpTitle, message: s.helpMessage, type: 'info' }) },
                     { separator: true },
-                    { text: 'About Notepad', action: () => XP_API.showDialog({ title: 'About Notepad', message: 'Microsoft (R) Notepad\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\nWin32 Human Interface Guidelines Compliant\n(C) Microsoft Corporation.', type: 'info' }) }
+                    { text: 'About Notepad', action: () => XP_API.showDialog({ title: s.aboutTitle, message: s.aboutMessage, type: 'info' }) }
                 ]
             }
         ]
@@ -222,18 +216,18 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     });
 
     const updateTitle = (path: string) => {
-        const title = (path ? `${path} - ` : 'Untitled - ') + 'Notepad';
+        const title = (path ? `${path} - ` : `${s.untitled} - `) + s.appTitle;
         const win = XP_API.WindowManager.getById(winId);
         if (win) win.setTitle(title);
     };
 
     const winId = FCCF.Window({
-        title: (initialPath ? `${initialPath} - ` : 'Untitled - ') + 'Notepad',
+        title: (initialPath ? `${initialPath} - ` : `${s.untitled} - `) + s.appTitle,
         width: 600,
         height: 420,
         content: layout,
         resizable: true,
-        icon: 'https://img.icons8.com/color/48/000000/notepad.png'
+        icon: s.icon
     });
 
     subscribeContent((val) => {

@@ -1,0 +1,23 @@
+{
+  "difficulties": {
+    "beginner": { "rows": 9, "cols": 9, "mines": 10, "name": "Beginner" },
+    "intermediate": { "rows": 16, "cols": 16, "mines": 40, "name": "Intermediate" },
+    "expert": { "rows": 16, "cols": 30, "mines": 99, "name": "Expert" }
+  },
+  "strings": {
+    "title": "Minesweeper",
+    "icon": "https://img.icons8.com/color/48/000000/bomb.png",
+    "gameMenu": "Game",
+    "helpMenu": "Help",
+    "newGame": "New",
+    "beginner": "Beginner",
+    "intermediate": "Intermediate",
+    "expert": "Expert",
+    "exit": "Exit",
+    "helpTopics": "Help Topics",
+    "about": "About Minesweeper",
+    "helpMessage": "The goal of Minesweeper is to find all the mines without uncovering any.",
+    "aboutMessage": "Minesweeper\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\n(C) Microsoft Corporation.",
+    "winMessage": "Congratulations! You won the game in {time} seconds!"
+  }
+}

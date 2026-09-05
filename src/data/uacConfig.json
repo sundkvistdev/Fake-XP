@@ -1,0 +1,12 @@
+{
+  "title": "User Account Control",
+  "icon": "https://img.icons8.com/color/48/000000/shield.png",
+  "headerTitle": "User Account Control",
+  "headerSub": "An unidentified program wants access to your computer.",
+  "instructions": "To continue, type an administrator password, and then click OK.",
+  "passwordPlaceholder": "Password",
+  "okButton": "OK",
+  "cancelButton": "Cancel",
+  "errorTitle": "UAC",
+  "errorMessage": "Incorrect password."
+}

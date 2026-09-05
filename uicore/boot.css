@@ -1,0 +1,182 @@
+/* Windows XP / Samsoft FXP OS Dynamic Boot Screen Stylesheet */
+:root {
+    --boot-bg: #000000;
+    --boot-text: #ffffff;
+    --boot-highlight: #ff9900;
+    --boot-dim: #7f7f7f;
+    --boot-track-bg: #0a0a0a;
+    --boot-track-border: #333333;
+    --boot-block-color: #245edb;
+    --boot-block-light: #528efd;
+}
+
+#boot-screen, .fxp-boot-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--boot-bg);
+    color: var(--boot-text);
+    z-index: 250000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--xp-font-main);
+    overflow: hidden;
+    user-select: none;
+    transition: opacity 0.4s ease-out;
+
+    &.fade-out {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    > .boot-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.75rem;
+        width: 100%;
+        max-width: 38rem;
+        padding: 2rem;
+
+        > .boot-brand-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 0.5rem;
+
+            > .boot-logo-wrapper {
+                display: flex;
+                align-items: center;
+                gap: 0.875rem;
+                margin-bottom: 0.5rem;
+
+                > .boot-flag-icon {
+                    width: 3.5rem;
+                    height: 3.5rem;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    grid-template-rows: 1fr 1fr;
+                    gap: 0.25rem;
+                    transform: skewX(-10deg);
+
+                    > .flag-red {
+                        background: #e81123;
+                        border-radius: 0.25rem 0.625rem 0.25rem 0.25rem;
+                    }
+
+                    > .flag-green {
+                        background: #107c41;
+                        border-radius: 0.625rem 0.25rem 0.25rem 0.25rem;
+                    }
+
+                    > .flag-blue {
+                        background: #0078d7;
+                        border-radius: 0.25rem 0.25rem 0.25rem 0.625rem;
+                    }
+
+                    > .flag-yellow {
+                        background: #ffb900;
+                        border-radius: 0.25rem 0.25rem 0.625rem 0.25rem;
+                    }
+                }
+
+                > .boot-brand-text {
+                    font-size: 2.25rem;
+                    font-weight: bold;
+                    letter-spacing: -0.05rem;
+                    color: var(--boot-text);
+
+                    > .brand-highlight {
+                        color: var(--boot-highlight);
+                        margin-left: 0.25rem;
+                    }
+                }
+            }
+
+            > .boot-edition-tag {
+                font-size: 0.9375rem;
+                color: #d0d0d0;
+                letter-spacing: 0.125rem;
+                text-transform: uppercase;
+                margin-top: -0.25rem;
+            }
+        }
+
+        > .boot-progress-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+
+            > .boot-progress-track {
+                width: 15rem;
+                height: 0.875rem;
+                background-color: var(--boot-track-bg);
+                border: 2px solid var(--boot-track-border);
+                border-radius: 0.375rem;
+                overflow: hidden;
+                position: relative;
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+
+                > .boot-progress-marquee {
+                    position: absolute;
+                    top: 0;
+                    left: -3.75rem;
+                    width: 3.75rem;
+                    height: 100%;
+                    display: flex;
+                    gap: 0.25rem;
+                    animation: xp-boot-marquee 1.4s infinite linear;
+
+                    > .marquee-block {
+                        flex: 1;
+                        height: 100%;
+                        background: linear-gradient(180deg, var(--boot-block-light) 0%, var(--boot-block-color) 100%);
+                        border-radius: 0.125rem;
+                        box-shadow: 0 0 4px rgba(82, 142, 253, 0.6);
+                    }
+                }
+            }
+
+            > .boot-stage-label {
+                font-family: var(--xp-font-mono);
+                font-size: 0.75rem;
+                color: #999999;
+                text-align: center;
+                min-height: 1.125rem;
+                letter-spacing: 0.025rem;
+            }
+        }
+
+        > .boot-footer {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.6875rem;
+            color: var(--boot-dim);
+            text-align: center;
+
+            > .boot-copyright {
+                opacity: 0.75;
+            }
+        }
+    }
+}
+
+@keyframes xp-boot-marquee {
+    0% {
+        left: -3.75rem;
+    }
+    100% {
+        left: 100%;
+    }
+}

@@ -1,4 +1,5 @@
 import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
+import calculatorData from '../src/data/calculatorData.json';
 
 export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) {
     const [getDisplay, setDisplay, subscribeDisplay] = FCCF.useState<string>('0');
@@ -153,17 +154,23 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
 
         const topRow = document.createElement('div');
         topRow.style.display = 'grid';
-        topRow.style.gridTemplateColumns = 'repeat(3, 1fr)';
+        topRow.style.gridTemplateColumns = `repeat(${calculatorData.topButtons.length}, 1fr)`;
         topRow.style.gap = '0.25rem';
         topRow.style.marginBottom = '0.375rem';
 
-        const bsBtn = FCCF.Controls.Button({ text: 'Backspace', onClick: handleBackspace });
-        const ceBtn = FCCF.Controls.Button({ text: 'CE', onClick: handleClearEntry });
-        const cBtn = FCCF.Controls.Button({ text: 'C', onClick: handleClear });
+        const topActions: Record<string, () => void> = {
+            backspace: handleBackspace,
+            clearEntry: handleClearEntry,
+            clear: handleClear
+        };
 
-        topRow.appendChild(bsBtn.el);
-        topRow.appendChild(ceBtn.el);
-        topRow.appendChild(cBtn.el);
+        calculatorData.topButtons.forEach(btnConfig => {
+            const btn = FCCF.Controls.Button({
+                text: btnConfig.text,
+                onClick: topActions[btnConfig.action] || handleClear
+            });
+            topRow.appendChild(btn.el);
+        });
         buttonArea.appendChild(topRow);
 
         const mainGrid = document.createElement('div');
@@ -171,47 +178,25 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         mainGrid.style.gridTemplateColumns = isSci ? 'repeat(6, 1fr)' : 'repeat(5, 1fr)';
         mainGrid.style.gap = '0.25rem';
 
-        const standardLayout = [
-            { text: 'MC', action: () => handleMemory('MC'), color: '#cc0000' },
-            { text: '7', action: () => handleDigit('7') },
-            { text: '8', action: () => handleDigit('8') },
-            { text: '9', action: () => handleDigit('9') },
-            { text: '/', action: () => handleOp('/') },
-            { text: 'sqrt', action: () => handleUnary('sqrt') },
+        calculatorData.standardButtons.forEach(item => {
+            let action: () => void = () => {};
+            if (item.type === 'digit' && item.arg) action = () => handleDigit(item.arg);
+            else if (item.type === 'op' && item.arg) action = () => handleOp(item.arg);
+            else if (item.type === 'unary' && item.arg) action = () => handleUnary(item.arg);
+            else if (item.type === 'memory' && item.arg) action = () => handleMemory(item.arg);
+            else if (item.type === 'dot') action = handleDot;
+            else if (item.type === 'equals') action = handleEquals;
 
-            { text: 'MR', action: () => handleMemory('MR'), color: '#cc0000' },
-            { text: '4', action: () => handleDigit('4') },
-            { text: '5', action: () => handleDigit('5') },
-            { text: '6', action: () => handleDigit('6') },
-            { text: '*', action: () => handleOp('*') },
-            { text: '%', action: () => handleUnary('percent') },
-
-            { text: 'MS', action: () => handleMemory('MS'), color: '#cc0000' },
-            { text: '1', action: () => handleDigit('1') },
-            { text: '2', action: () => handleDigit('2') },
-            { text: '3', action: () => handleDigit('3') },
-            { text: '-', action: () => handleOp('-') },
-            { text: '1/x', action: () => handleUnary('inv') },
-
-            { text: 'M+', action: () => handleMemory('M+'), color: '#cc0000' },
-            { text: '0', action: () => handleDigit('0') },
-            { text: '+/-', action: () => handleUnary('neg') },
-            { text: '.', action: handleDot },
-            { text: '+', action: () => handleOp('+') },
-            { text: '=', action: handleEquals, default: true }
-        ];
-
-        standardLayout.forEach(item => {
             const btn = FCCF.Controls.Button({
                 text: item.text,
-                default: item.default,
+                default: 'isDefault' in item ? Boolean(item.isDefault) : false,
                 style: {
                     minWidth: '2rem',
                     minHeight: '1.75rem',
-                    color: item.color || '#000000',
-                    fontWeight: (item.text >= '0' && item.text <= '9') ? 'bold' : 'normal'
+                    color: ('color' in item && item.color) ? item.color : '#000000',
+                    fontWeight: ('bold' in item && item.bold) ? 'bold' : 'normal'
                 },
-                onClick: item.action
+                onClick: action
             });
             mainGrid.appendChild(btn.el);
         });
@@ -219,15 +204,16 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         buttonArea.appendChild(mainGrid);
     };
 
+    const s = calculatorData.strings;
     const menuStrip = FCCF.Controls.MenuStrip({
         items: [
             {
-                text: 'Edit',
+                text: s.editMenu,
                 menu: [
-                    { text: 'Copy', shortcut: 'Ctrl+C', action: () => {
+                    { text: s.copy, shortcut: 'Ctrl+C', action: () => {
                         navigator.clipboard?.writeText(getDisplay());
                     }},
-                    { text: 'Paste', shortcut: 'Ctrl+V', action: async () => {
+                    { text: s.paste, shortcut: 'Ctrl+V', action: async () => {
                         try {
                             const text = await navigator.clipboard?.readText();
                             if (text && !isNaN(Number(text))) {
@@ -239,14 +225,14 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 ]
             },
             {
-                text: 'View',
+                text: s.viewMenu,
                 menu: [
-                    { text: 'Standard', checked: getMode() === 'standard', action: () => {
+                    { text: s.standard, checked: getMode() === 'standard', action: () => {
                         setMode('standard');
                         XP_API.Registry.set('Apps/Calculator/Mode', 'standard');
                         renderButtons();
                     }},
-                    { text: 'Scientific', checked: getMode() === 'scientific', action: () => {
+                    { text: s.scientific, checked: getMode() === 'scientific', action: () => {
                         setMode('scientific');
                         XP_API.Registry.set('Apps/Calculator/Mode', 'scientific');
                         renderButtons();
@@ -254,11 +240,11 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 ]
             },
             {
-                text: 'Help',
+                text: s.helpMenu,
                 menu: [
-                    { text: 'Help Topics', action: () => XP_API.showDialog({ title: 'Calculator Help', message: 'Calculator provides standard and scientific mathematical calculation capabilities.', type: 'info' }) },
+                    { text: s.helpTopics, action: () => XP_API.showDialog({ title: s.helpTitle, message: s.helpMessage, type: 'info' }) },
                     { separator: true },
-                    { text: 'About Calculator', action: () => XP_API.showDialog({ title: 'About Calculator', message: 'Microsoft (R) Calculator\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\nWin32 HIG Compliant', type: 'info' }) }
+                    { text: s.aboutCalculator, action: () => XP_API.showDialog({ title: s.aboutTitle, message: s.aboutMessage, type: 'info' }) }
                 ]
             }
         ]
@@ -277,13 +263,13 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
 
     renderButtons();
 
-    const winId = FCCF.Window({
-        title: 'Calculator',
+    FCCF.Window({
+        title: s.title,
         width: 280,
         height: 290,
         content: layout,
         resizable: false,
-        icon: 'https://img.icons8.com/color/48/000000/calculator.png'
+        icon: s.icon
     });
 
     subscribeDisplay((val) => {

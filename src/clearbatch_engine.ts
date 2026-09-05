@@ -1,8 +1,9 @@
-import { IFCCF, IKernel, IVirtualFileSystem, FCCFComponent, AppInstance, TreeNode } from './types';
+import { IFCCF, IKernel, IVirtualFileSystem, FCCFComponent, AppInstance, TreeNode, TabControlComponent } from './types';
+import { ExtraX, ExtraXOrderedItem, ExtraXOrderedCategory, ExtraXViewMode } from './extrax';
 import systemInfo from './data/systemInfo.json';
 
 export interface IClearBatchTask {
-    task: 'set' | 'interpolate' | 'calc' | 'delay' | 'dialog' | 'vfsList' | 'vfsRead' | 'vfsWrite' | 'vfsDelete' | 'registryGet' | 'registrySet' | 'exec' | 'log' | 'closeWindow' | 'if';
+    task: 'set' | 'interpolate' | 'calc' | 'delay' | 'dialog' | 'vfsList' | 'vfsRead' | 'vfsWrite' | 'vfsDelete' | 'registryGet' | 'registrySet' | 'exec' | 'log' | 'closeWindow' | 'if' | 'notify' | 'copyToClipboard' | 'beep' | 'toggle' | 'navigate';
     key?: string;
     target?: string;
     value?: unknown;
@@ -10,6 +11,8 @@ export interface IClearBatchTask {
     expr?: string;
     op?: 'add' | 'sub' | 'multiply' | 'divide' | 'eval';
     ms?: number;
+    timeout?: number;
+    url?: string;
     dialogType?: 'info' | 'warning' | 'error' | 'confirm' | 'prompt' | 'details' | 'colorPicker' | 'findReplace' | 'about';
     title?: string;
     message?: string;
@@ -23,10 +26,20 @@ export interface IClearBatchTask {
     else?: IClearBatchTask[];
 }
 
+export interface IClearBatchCard {
+    id: string;
+    title: string;
+    description?: string;
+    icon?: string;
+    badge?: string;
+    action?: string | IClearBatchTask[];
+    subtasks?: Array<{ label: string; action: string | IClearBatchTask[] }>;
+}
+
 export interface IClearBatchField {
     id: string;
     label?: string;
-    type: 'text' | 'dropdown' | 'checkbox' | 'progress' | 'summary' | 'filePicker' | 'logArea' | 'jsonViewer' | 'tree' | 'button' | 'colorPicker' | 'details';
+    type: 'text' | 'dropdown' | 'checkbox' | 'progress' | 'summary' | 'filePicker' | 'logArea' | 'jsonViewer' | 'tree' | 'button' | 'colorPicker' | 'details' | 'cards' | 'search' | 'slider' | 'orderedData' | 'extrax';
     placeholder?: string;
     pickerMode?: 'folder' | 'file';
     initial?: number | boolean | string;
@@ -39,6 +52,15 @@ export interface IClearBatchField {
     treeData?: TreeNode[];
     lazyKeyRoot?: string;
     detailsText?: string;
+    cards?: IClearBatchCard[];
+    orderedItems?: ExtraXOrderedItem[];
+    categories?: ExtraXOrderedCategory[];
+    viewMode?: ExtraXViewMode;
+    searchable?: boolean;
+    filterTarget?: string;
+    min?: number;
+    max?: number;
+    step?: number;
 }
 
 export interface IClearBatchSection {
@@ -76,9 +98,37 @@ export interface IClearBatchMenu {
     items: IClearBatchMenuItem[];
 }
 
+export interface IClearBatchExtraXItem {
+    id?: string;
+    text: string;
+    icon?: string;
+    action?: string | IClearBatchTask[];
+}
+
+export interface IClearBatchExtraXExpando {
+    id?: string;
+    title: string;
+    secondary?: boolean;
+    icon?: string;
+    items: IClearBatchExtraXItem[];
+}
+
+export interface IClearBatchExtraXConfig {
+    enabled?: boolean;
+    navBar?: boolean;
+    addressBar?: boolean;
+    initialAddress?: string;
+    addressBind?: string;
+    taskpane?: IClearBatchExtraXExpando[];
+    headerTitle?: string;
+    headerSubtitle?: string;
+}
+
 export interface IClearBatchAppDef {
     type: string;
     version?: string;
+    layout?: 'standard' | 'extrax' | 'tabs' | 'sidebar';
+    extrax?: IClearBatchExtraXConfig;
     meta?: {
         name?: string;
         author?: string;
@@ -186,6 +236,15 @@ export function interpolateString(template: string, state: Record<string, unknow
         // Also check direct state lookup if nested failed
         if (key in state && state[key] !== undefined && state[key] !== null) {
             return String(state[key]);
+        }
+
+        // Check kernel Registry (supporting both System.Product and System/Product)
+        if (kernel?.Registry) {
+            const regPath = key.replace(/\./g, '/');
+            const regVal = kernel.Registry.get(regPath);
+            if (regVal !== undefined && regVal !== null && typeof regVal !== 'object') {
+                return String(regVal);
+            }
         }
 
         return fallback || match;
@@ -362,6 +421,63 @@ export async function executeClearBatchTasks(tasks: IClearBatchTask[], ctx: ICle
                 }
                 break;
             }
+            case 'notify': {
+                const title = item.title ? interpolateString(item.title, ctx.state, ctx.kernel) : 'System Notification';
+                const message = item.message ? interpolateString(item.message, ctx.state, ctx.kernel) : '';
+                const target = document.getElementById('system-tray') || document.body;
+                ctx.kernel.WindowManager.showBalloonTip(target, {
+                    title,
+                    message,
+                    timeout: item.timeout !== undefined ? item.timeout : 5000
+                });
+                break;
+            }
+            case 'copyToClipboard': {
+                if (item.value !== undefined) {
+                    const text = interpolateString(String(item.value), ctx.state, ctx.kernel);
+                    if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text).catch(() => {});
+                    }
+                    ctx.log(`[Clipboard] Copied "${text}"`);
+                }
+                break;
+            }
+            case 'beep': {
+                try {
+                    const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+                    if (AudioCtxClass) {
+                        const audioCtx = new AudioCtxClass();
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.frequency.value = Number(item.value) || 440;
+                        gain.gain.value = 0.08;
+                        osc.start();
+                        setTimeout(() => {
+                            osc.stop();
+                            audioCtx.close().catch(() => {});
+                        }, item.ms || 120);
+                    }
+                } catch {}
+                break;
+            }
+            case 'toggle': {
+                if (item.key) {
+                    const cur = !!ctx.state[item.key];
+                    ctx.updateState(item.key, !cur);
+                }
+                break;
+            }
+            case 'navigate': {
+                const dest = item.url || item.value;
+                if (dest) {
+                    const resolved = interpolateString(String(dest), ctx.state, ctx.kernel);
+                    ctx.updateState('currentAddress', resolved);
+                    ctx.log(`[Navigate] Navigated to: "${resolved}"`);
+                }
+                break;
+            }
         }
     }
 }
@@ -374,18 +490,25 @@ export function renderClearBatchApp(
     fccf: IFCCF,
     kernel: IKernel,
     vfs: IVirtualFileSystem,
-    winId: string
+    winId: string | { id: string } = ''
 ): HTMLElement {
+    const isExtraX = appDef.layout === 'extrax' || !!appDef.extrax;
     const rootContainer = document.createElement('div');
-    Object.assign(rootContainer.style, {
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        width: '100%',
-        overflow: 'hidden',
-        background: '#ece9d8',
-        boxSizing: 'border-box'
-    });
+    if (isExtraX) {
+        rootContainer.className = 'extrax-shell';
+        rootContainer.style.height = '100%';
+        rootContainer.style.width = '100%';
+    } else {
+        Object.assign(rootContainer.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            width: '100%',
+            overflow: 'hidden',
+            background: '#ece9d8',
+            boxSizing: 'border-box'
+        });
+    }
 
     const state: Record<string, unknown> = { ...(appDef.initialState || {}) };
     const subscribers: (() => void)[] = [];
@@ -414,7 +537,9 @@ export function renderClearBatchApp(
         kernel,
         fccf,
         vfs,
-        winId
+        get winId() {
+            return typeof winId === 'object' ? winId.id : winId;
+        }
     };
 
     const runAction = async (actionDef?: string | IClearBatchTask[]) => {
@@ -427,7 +552,6 @@ export function renderClearBatchApp(
                 if (Array.isArray(target)) {
                     await executeClearBatchTasks(target, ctx);
                 } else if (typeof target === 'string') {
-                    // Internal known handlers
                     handleBuiltInAction(target, ctx);
                 }
             } else {
@@ -436,18 +560,37 @@ export function renderClearBatchApp(
         }
     };
 
+    let activeTabControl: { setActiveTab: (id: string) => void } | null = null;
+
     const handleBuiltInAction = async (act: string, c: IClearBatchContext) => {
         if (act === 'closeWindow') {
             c.kernel.closeWindow(c.winId);
         } else if (act === 'clearLog') {
             c.updateState('systemLog', '');
-        } else if (act.startsWith('exec:')) {
-            const app = act.substring(5);
+        } else if (act === 'showClassic') {
+            if (activeTabControl) activeTabControl.setActiveTab('tabClassic');
+            c.updateState('activeTab', 'tabClassic');
+        } else if (act === 'showCategories') {
+            if (activeTabControl) activeTabControl.setActiveTab('tabCategories');
+            c.updateState('activeTab', 'tabCategories');
+        } else if (act.startsWith('tab:')) {
+            const tabId = act.substring(4);
+            if (activeTabControl) activeTabControl.setActiveTab(tabId);
+            c.updateState('activeTab', tabId);
+        } else if (act.startsWith('exec:') || act.startsWith('openApp:')) {
+            const app = act.split(':')[1];
             c.kernel.exec(app);
+        } else if (act.startsWith('nav:')) {
+            const dest = act.substring(4);
+            c.updateState('currentAddress', dest);
+        } else {
+            try {
+                c.kernel.exec(act);
+            } catch {}
         }
     };
 
-    // 1. Menu strip if defined
+    // 1. Menu strip: THE ABSOLUTE FIRST STRIP IN A WINDOW
     if (appDef.menu && appDef.menu.length > 0) {
         const menuItems = appDef.menu.map(m => ({
             text: m.text,
@@ -461,17 +604,203 @@ export function renderClearBatchApp(
         rootContainer.appendChild(menuStrip.el);
     }
 
+    // 2. Navigation Toolbar / Address Bar (below the Menu Strip)
+    let addressInputEl: HTMLInputElement | null = null;
+    if (isExtraX && appDef.extrax?.navBar !== false) {
+        const navBar = document.createElement('div');
+        navBar.className = 'extrax-nav-bar';
+
+        const backBtn = document.createElement('button');
+        backBtn.className = 'extrax-nav-btn';
+        backBtn.innerText = '◀ Back';
+        backBtn.onclick = () => {
+            const hist = (state['_navHistory'] as string[]) || [];
+            if (hist.length > 1) {
+                hist.pop();
+                const prev = hist[hist.length - 1];
+                if (prev) {
+                    updateState('currentAddress', prev);
+                    if (addressInputEl) addressInputEl.value = prev;
+                }
+            }
+        };
+
+        const fwdBtn = document.createElement('button');
+        fwdBtn.className = 'extrax-nav-btn';
+        fwdBtn.innerText = 'Forward ▶';
+        fwdBtn.disabled = true;
+
+        const upBtn = document.createElement('button');
+        upBtn.className = 'extrax-nav-btn';
+        upBtn.innerText = '▲ Up';
+        upBtn.onclick = () => {
+            const upAddr = appDef.extrax?.initialAddress || (appDef.window?.title || 'Control Panel');
+            updateState('currentAddress', upAddr);
+            if (addressInputEl) addressInputEl.value = upAddr;
+        };
+
+        navBar.appendChild(backBtn);
+        navBar.appendChild(fwdBtn);
+        navBar.appendChild(upBtn);
+        rootContainer.appendChild(navBar);
+    }
+
+    // ExtraX: Address Bar (below Navigation Toolbar)
+    if (isExtraX && appDef.extrax?.addressBar !== false) {
+        const addrBar = document.createElement('div');
+        addrBar.className = 'extrax-address-bar';
+
+        const addrLabel = document.createElement('span');
+        addrLabel.style.fontSize = '11px';
+        addrLabel.style.color = '#555555';
+        addrLabel.innerText = 'Address';
+        addrBar.appendChild(addrLabel);
+
+        addressInputEl = document.createElement('input');
+        addressInputEl.className = 'extrax-address-input';
+        const initialAddr = appDef.extrax?.initialAddress || (appDef.window?.title || 'Control Panel');
+        state['currentAddress'] = state['currentAddress'] || initialAddr;
+        state['_navHistory'] = [state['currentAddress']];
+        addressInputEl.value = String(state['currentAddress']);
+        addressInputEl.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                const target = addressInputEl!.value.trim();
+                updateState('currentAddress', target);
+                const hist = (state['_navHistory'] as string[]) || [];
+                hist.push(target);
+            }
+        };
+        addrBar.appendChild(addressInputEl);
+
+        const goBtn = document.createElement('button');
+        goBtn.className = 'extrax-nav-btn';
+        goBtn.innerText = 'Go ➔';
+        goBtn.onclick = () => {
+            const target = addressInputEl!.value.trim();
+            updateState('currentAddress', target);
+            const hist = (state['_navHistory'] as string[]) || [];
+            hist.push(target);
+        };
+        addrBar.appendChild(goBtn);
+
+        subscribers.push(() => {
+            if (addressInputEl && state['currentAddress']) {
+                addressInputEl.value = String(state['currentAddress']);
+            }
+        });
+
+        rootContainer.appendChild(addrBar);
+    }
+
+    // ExtraX: Body container with Taskpane and Content
+    let contentTargetParent: HTMLElement = rootContainer;
+    if (isExtraX) {
+        const extraxBody = document.createElement('div');
+        extraxBody.className = 'extrax-body';
+
+        // Left Task Pane
+        const taskpane = document.createElement('div');
+        taskpane.className = 'extrax-taskpane';
+
+        const expandos = appDef.extrax?.taskpane || [];
+        expandos.forEach(exp => {
+            const expWrap = document.createElement('div');
+            expWrap.className = 'extrax-expando';
+
+            const header = document.createElement('div');
+            header.className = `extrax-expando-header ${exp.secondary ? 'secondary' : ''}`;
+
+            const titleSpan = document.createElement('span');
+            titleSpan.innerText = exp.title;
+            header.appendChild(titleSpan);
+
+            const chevron = document.createElement('span');
+            chevron.innerText = '▲';
+            chevron.style.fontSize = '9px';
+            header.appendChild(chevron);
+
+            const expBody = document.createElement('div');
+            expBody.className = 'extrax-expando-body';
+
+            header.onclick = () => {
+                const isHidden = expBody.style.display === 'none';
+                expBody.style.display = isHidden ? 'flex' : 'none';
+                chevron.innerText = isHidden ? '▲' : '▼';
+            };
+
+            exp.items.forEach(item => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'extrax-task-item';
+                taskItem.setAttribute('tabindex', '0');
+                taskItem.setAttribute('role', 'button');
+
+                if (item.icon) {
+                    const icon = document.createElement('img');
+                    icon.className = 'extrax-task-icon';
+                    icon.src = item.icon;
+                    taskItem.appendChild(icon);
+                }
+
+                const span = document.createElement('span');
+                span.innerText = item.text;
+                taskItem.appendChild(span);
+
+                taskItem.onclick = () => {
+                    if (item.action) runAction(item.action);
+                };
+                taskItem.onkeydown = (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        if (item.action) runAction(item.action);
+                    }
+                };
+
+                expBody.appendChild(taskItem);
+            });
+
+            expWrap.appendChild(header);
+            expWrap.appendChild(expBody);
+            taskpane.appendChild(expWrap);
+        });
+
+        extraxBody.appendChild(taskpane);
+
+        const extraxContent = document.createElement('div');
+        extraxContent.className = 'extrax-content';
+        if (appDef.extrax?.headerTitle) {
+            const hTitle = document.createElement('div');
+            hTitle.className = 'extrax-header-title';
+            hTitle.innerText = appDef.extrax.headerTitle;
+            extraxContent.appendChild(hTitle);
+        }
+
+        extraxBody.appendChild(extraxContent);
+        rootContainer.appendChild(extraxBody);
+
+        contentTargetParent = extraxContent;
+    }
+
     // 2. Main content area (Tabs OR Sections)
     const contentArea = document.createElement('div');
-    Object.assign(contentArea.style, {
-        flex: '1',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'auto',
-        padding: '0.5rem',
-        minHeight: '0',
-        boxSizing: 'border-box'
-    });
+    if (isExtraX) {
+        Object.assign(contentArea.style, {
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            height: '100%',
+            overflow: 'auto',
+            boxSizing: 'border-box'
+        });
+    } else {
+        Object.assign(contentArea.style, {
+            flex: '1',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'auto',
+            padding: '0.5rem',
+            minHeight: '0',
+            boxSizing: 'border-box'
+        });
+    }
 
     const renderSections = (sections: IClearBatchSection[], targetParent: HTMLElement) => {
         sections.forEach(sec => {
@@ -771,6 +1100,121 @@ export function renderClearBatchApp(
                         row.appendChild(treeWrap);
                         break;
                     }
+                    case 'cards':
+                    case 'orderedData':
+                    case 'extrax': {
+                        const rawCards = field.cards || [];
+                        const orderedItems: ExtraXOrderedItem[] = field.orderedItems || rawCards.map(c => ({
+                            id: c.id,
+                            title: c.title,
+                            description: c.description,
+                            icon: c.icon,
+                            badge: c.badge,
+                            subtasks: (c.subtasks || []).map(st => ({
+                                label: st.label,
+                                action: () => runAction(st.action)
+                            })),
+                            action: () => runAction(c.action)
+                        }));
+
+                        const orderedCategories: ExtraXOrderedCategory[] = field.categories || rawCards.map(c => ({
+                            id: c.id,
+                            title: c.title,
+                            icon: c.icon,
+                            description: c.description,
+                            subtasks: (c.subtasks || []).map(st => ({
+                                label: st.label,
+                                action: () => runAction(st.action)
+                            }))
+                        }));
+
+                        const manager = ExtraX.createOrderedDataManager({
+                            title: field.label,
+                            items: orderedItems,
+                            categories: orderedCategories,
+                            viewMode: field.viewMode || (orderedCategories.length > 0 ? 'categories' : 'tiles'),
+                            enableSearch: field.searchable !== false,
+                            searchPlaceholder: field.placeholder || 'Filter items...',
+                            onItemAction: (item) => {
+                                if (typeof item.action === 'function') item.action();
+                            }
+                        });
+                        manager.id = field.id;
+                        manager.style.width = '100%';
+                        manager.style.minHeight = '18rem';
+                        row.appendChild(manager);
+                        break;
+                    }
+                    case 'search': {
+                        const searchWrap = document.createElement('div');
+                        searchWrap.style.display = 'flex';
+                        searchWrap.style.alignItems = 'center';
+                        searchWrap.style.gap = '0.5rem';
+                        searchWrap.style.flex = '1';
+
+                        const searchInput = document.createElement('input');
+                        searchInput.type = 'text';
+                        searchInput.className = 'xp-input';
+                        searchInput.placeholder = field.placeholder || 'Type to filter items...';
+                        searchInput.style.flex = '1';
+
+                        searchInput.oninput = () => {
+                            const query = searchInput.value.toLowerCase().trim();
+                            state[field.id] = query;
+                            if (field.filterTarget) {
+                                const targetEl = rootContainer.querySelector(`#${field.filterTarget}`) || rootContainer.querySelector(`.${field.filterTarget}`);
+                                if (targetEl) {
+                                    Array.from(targetEl.children).forEach(child => {
+                                        const text = (child as HTMLElement).innerText.toLowerCase();
+                                        (child as HTMLElement).style.display = (!query || text.includes(query)) ? '' : 'none';
+                                    });
+                                }
+                            }
+                        };
+
+                        searchWrap.appendChild(searchInput);
+                        row.appendChild(searchWrap);
+                        break;
+                    }
+                    case 'slider': {
+                        const sliderWrap = document.createElement('div');
+                        sliderWrap.style.display = 'flex';
+                        sliderWrap.style.alignItems = 'center';
+                        sliderWrap.style.gap = '0.75rem';
+                        sliderWrap.style.flex = '1';
+
+                        const slider = document.createElement('input');
+                        slider.type = 'range';
+                        slider.min = String(field.min ?? 0);
+                        slider.max = String(field.max ?? 100);
+                        slider.step = String(field.step ?? 1);
+                        slider.value = String(state[field.id] ?? field.initial ?? 50);
+                        slider.style.flex = '1';
+
+                        const valDisplay = document.createElement('span');
+                        valDisplay.style.fontSize = '11px';
+                        valDisplay.style.minWidth = '2.5rem';
+                        valDisplay.innerText = slider.value;
+
+                        slider.oninput = () => {
+                            state[field.id] = Number(slider.value);
+                            valDisplay.innerText = slider.value;
+                            if (field.action) runAction(field.action);
+                        };
+
+                        subscribers.push(() => {
+                            const cur = String(state[field.id] ?? '');
+                            if (cur && slider.value !== cur) {
+                                slider.value = cur;
+                                valDisplay.innerText = cur;
+                            }
+                        });
+
+                        sliderWrap.appendChild(slider);
+                        sliderWrap.appendChild(valDisplay);
+                        row.appendChild(sliderWrap);
+                        break;
+                    }
                 }
 
                 secContainer.appendChild(row);
@@ -782,48 +1226,96 @@ export function renderClearBatchApp(
 
     // Render TabControl or Direct Sections
     if (appDef.tabs && appDef.tabs.length > 0) {
-        const tabItems = appDef.tabs.map(tab => {
-            const tabWrap = document.createElement('div');
-            Object.assign(tabWrap.style, {
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'auto',
-                boxSizing: 'border-box'
+        if (isExtraX) {
+            // NO TAB CONTROLS IN ExtraX!
+            // View modes and tabs are switched purely via sidebar links and shell selectors.
+            let currentTabId = (state['activeTab'] as string) || appDef.tabs[0].id;
+            const tabPanels: Record<string, HTMLElement> = {};
+
+            appDef.tabs.forEach(tab => {
+                const tabWrap = document.createElement('div');
+                Object.assign(tabWrap.style, {
+                    width: '100%',
+                    height: '100%',
+                    display: tab.id === currentTabId ? 'flex' : 'none',
+                    flexDirection: 'column',
+                    overflow: 'auto',
+                    boxSizing: 'border-box'
+                });
+
+                renderSections(tab.sections, tabWrap);
+
+                if (tab.actions && tab.actions.length > 0) {
+                    const actRow = document.createElement('div');
+                    actRow.className = 'xp-dialog-actions';
+                    actRow.style.marginTop = 'auto';
+                    tab.actions.forEach(a => {
+                        const btn = document.createElement('button');
+                        btn.className = `xp-button ${a.isDefault ? 'xp-btn-default' : ''}`;
+                        btn.innerText = a.text;
+                        btn.onclick = () => runAction(a.action);
+                        actRow.appendChild(btn);
+                    });
+                    tabWrap.appendChild(actRow);
+                }
+
+                contentArea.appendChild(tabWrap);
+                tabPanels[tab.id] = tabWrap;
             });
 
-            renderSections(tab.sections, tabWrap);
-
-            // Tab-specific actions if any
-            if (tab.actions && tab.actions.length > 0) {
-                const actRow = document.createElement('div');
-                actRow.className = 'xp-dialog-actions';
-                actRow.style.marginTop = 'auto';
-                tab.actions.forEach(a => {
-                    const btn = document.createElement('button');
-                    btn.className = `xp-button ${a.isDefault ? 'xp-btn-default' : ''}`;
-                    btn.innerText = a.text;
-                    btn.onclick = () => runAction(a.action);
-                    actRow.appendChild(btn);
-                });
-                tabWrap.appendChild(actRow);
-            }
-
-            return {
-                id: tab.id,
-                title: tab.title,
-                disabled: tab.disabled,
-                content: tabWrap
+            activeTabControl = {
+                setActiveTab: (tabId: string) => {
+                    currentTabId = tabId;
+                    Object.entries(tabPanels).forEach(([tid, el]) => {
+                        el.style.display = tid === tabId ? 'flex' : 'none';
+                    });
+                }
             };
-        });
+        } else {
+            const tabItems = appDef.tabs.map(tab => {
+                const tabWrap = document.createElement('div');
+                Object.assign(tabWrap.style, {
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'auto',
+                    boxSizing: 'border-box'
+                });
 
-        const tabControl = fccf.Controls.TabControl({ tabs: tabItems });
-        contentArea.appendChild(tabControl.el);
+                renderSections(tab.sections, tabWrap);
+
+                // Tab-specific actions if any
+                if (tab.actions && tab.actions.length > 0) {
+                    const actRow = document.createElement('div');
+                    actRow.className = 'xp-dialog-actions';
+                    actRow.style.marginTop = 'auto';
+                    tab.actions.forEach(a => {
+                        const btn = document.createElement('button');
+                        btn.className = `xp-button ${a.isDefault ? 'xp-btn-default' : ''}`;
+                        btn.innerText = a.text;
+                        btn.onclick = () => runAction(a.action);
+                        actRow.appendChild(btn);
+                    });
+                    tabWrap.appendChild(actRow);
+                }
+
+                return {
+                    id: tab.id,
+                    title: tab.title,
+                    disabled: tab.disabled,
+                    content: tabWrap
+                };
+            });
+
+            const tabControl = fccf.Controls.TabControl({ tabs: tabItems });
+            activeTabControl = tabControl;
+            contentArea.appendChild(tabControl.el);
+        }
     } else if (appDef.sections) {
         renderSections(appDef.sections, contentArea);
     }
 
-    rootContainer.appendChild(contentArea);
+    contentTargetParent.appendChild(contentArea);
 
     // 3. Status Bar if defined
     if (appDef.statusBar && appDef.statusBar.panels) {

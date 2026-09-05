@@ -1,0 +1,227 @@
+{
+  "type": "ClearBatchApp",
+  "version": "2.2",
+  "layout": "extrax",
+  "meta": {
+    "name": "Windows Security Center",
+    "author": "Samsoft Corporation / ClearBatch Runtime",
+    "description": "Security Center Monitoring, Firewall Controls, and Real-time Shield Management"
+  },
+  "window": {
+    "title": "Windows Security Center",
+    "width": 660,
+    "height": 540,
+    "icon": "https://img.icons8.com/color/48/000000/security-checked.png"
+  },
+  "extrax": {
+    "navBar": true,
+    "addressBar": true,
+    "initialAddress": "Security Center",
+    "headerTitle": "Security Essentials",
+    "taskpane": [
+      {
+        "title": "Resources",
+        "items": [
+          { "text": "Windows Firewall", "icon": "https://img.icons8.com/color/16/000000/security-checked.png", "action": "fwInfo" },
+          { "text": "Automatic Updates", "icon": "https://img.icons8.com/color/16/000000/sync.png", "action": "updateInfo" },
+          { "text": "Virus Protection", "icon": "https://img.icons8.com/color/16/000000/shield.png", "action": "avInfo" },
+          { "text": "Get Help with Security", "icon": "https://img.icons8.com/color/16/000000/help.png", "action": "helpSec" }
+        ]
+      },
+      {
+        "title": "See Also",
+        "secondary": true,
+        "items": [
+          { "text": "Control Panel", "icon": "https://img.icons8.com/color/16/000000/control-panel.png", "action": "openControl" },
+          { "text": "System Properties", "icon": "https://img.icons8.com/color/16/000000/system-information.png", "action": "openSysdm" }
+        ]
+      }
+    ]
+  },
+  "initialState": {
+    "firewall": true,
+    "automaticUpdates": true,
+    "antivirus": true,
+    "overallStatus": "Protected",
+    "scanProgress": 100
+  },
+  "menu": [
+    {
+      "text": "File",
+      "items": [
+        { "text": "Close", "action": "closeWindow" }
+      ]
+    },
+    {
+      "text": "Help",
+      "items": [
+        { "text": "Security Center Help", "action": "helpSec" }
+      ]
+    }
+  ],
+  "tabs": [
+    {
+      "id": "tabStatus",
+      "title": "Security Essentials",
+      "sections": [
+        {
+          "title": "Firewall",
+          "fields": [
+            {
+              "id": "firewall",
+              "type": "checkbox",
+              "label": "Windows Firewall is active and monitoring incoming connections",
+              "action": "toggleFirewall"
+            },
+            {
+              "id": "btnFwDetails",
+              "type": "button",
+              "buttonText": "View Firewall Settings...",
+              "action": "fwInfo"
+            }
+          ]
+        },
+        {
+          "title": "Automatic Updates",
+          "fields": [
+            {
+              "id": "automaticUpdates",
+              "type": "checkbox",
+              "label": "Download and install high-priority updates automatically",
+              "action": "toggleUpdates"
+            },
+            {
+              "id": "btnUpdateDetails",
+              "type": "button",
+              "buttonText": "Check for Updates Now...",
+              "action": "updateInfo"
+            }
+          ]
+        },
+        {
+          "title": "Virus Protection",
+          "fields": [
+            {
+              "id": "antivirus",
+              "type": "checkbox",
+              "label": "Real-time virus shield auto-protect is enabled",
+              "action": "toggleAntivirus"
+            },
+            {
+              "id": "btnScan",
+              "type": "button",
+              "buttonText": "Run System Scan...",
+              "action": "scanNow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tabManage",
+      "title": "Manage Security Settings",
+      "sections": [
+        {
+          "title": "Security Tools",
+          "fields": [
+            {
+              "id": "manageCards",
+              "type": "cards",
+              "cards": [
+                {
+                  "id": "cardFw",
+                  "title": "Windows Firewall",
+                  "icon": "https://img.icons8.com/color/48/000000/security-checked.png",
+                  "description": "Configure port exceptions, ICMP ping requests, and network interface filters.",
+                  "action": "fwInfo"
+                },
+                {
+                  "id": "cardUpdates",
+                  "title": "Automatic Updates",
+                  "icon": "https://img.icons8.com/color/48/000000/sync.png",
+                  "description": "Schedule update installations, download times, and notifications.",
+                  "action": "updateInfo"
+                },
+                {
+                  "id": "cardAv",
+                  "title": "Virus Protection",
+                  "icon": "https://img.icons8.com/color/48/000000/shield.png",
+                  "description": "Manage virus definition databases, heuristics sensitivity, and quarantine vault.",
+                  "action": "avInfo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": {
+    "toggleFirewall": [
+      { "task": "registrySet", "key": "Security/Firewall/Enabled", "value": "${firewall}" },
+      { "task": "notify", "title": "Security Center", "message": "Firewall state updated." }
+    ],
+    "toggleUpdates": [
+      { "task": "registrySet", "key": "Security/AutomaticUpdates/Enabled", "value": "${automaticUpdates}" },
+      { "task": "notify", "title": "Security Center", "message": "Automatic Updates state updated." }
+    ],
+    "toggleAntivirus": [
+      { "task": "registrySet", "key": "Security/Antivirus/AutoProtect", "value": "${antivirus}" },
+      { "task": "notify", "title": "Security Center", "message": "Antivirus shield state updated." }
+    ],
+    "scanNow": [
+      { "task": "notify", "title": "Virus Protection", "message": "Quick scan initiated..." },
+      { "task": "delay", "ms": 800 },
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Virus Protection Scan Complete",
+        "message": "Scan completed: 0 threats detected.\nFiles scanned: 1,428\nSystem is fully protected."
+      }
+    ],
+    "fwInfo": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Windows Firewall",
+        "message": "Windows Firewall helps protect your computer by preventing unauthorized users from gaining access through the Internet or a network."
+      }
+    ],
+    "updateInfo": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Automatic Updates",
+        "message": "When Automatic Updates is ON, Windows regularly checks for the latest high-priority updates for your computer and installs them."
+      }
+    ],
+    "avInfo": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Virus Protection",
+        "message": "Samsoft FXP Antivirus Shield is monitoring filesystem I/O in real time."
+      }
+    ],
+    "helpSec": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Security Center Help",
+        "message": "Samsoft FXP OS Security Center monitors the status of critical security features:\n• Firewall\n• Automatic Updates\n• Virus Protection"
+      }
+    ],
+    "openControl": [
+      { "task": "exec", "app": "control" }
+    ],
+    "openSysdm": [
+      { "task": "exec", "app": "sysdm" }
+    ]
+  },
+  "statusBar": {
+    "panels": [
+      { "text": "Status: Monitored & Secure", "flexGrow": true },
+      { "text": "ClearBatch v2.2", "width": "9rem" }
+    ]
+  }
+}

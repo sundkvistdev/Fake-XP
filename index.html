@@ -15,52 +15,14 @@
     <link rel="stylesheet" href="/uicore/window.css">
     <link rel="stylesheet" href="/uicore/startmenu.css">
     <link rel="stylesheet" href="/uicore/extrax.css">
+    <link rel="stylesheet" href="/uicore/boot.css">
   </head>
   <body>
     <!-- 1. Base Layer: Logon Screen, Lock Workstation, Power States -->
     <div id="base-layer"></div>
 
-    <!-- 2. User Layer: Desktop, Taskbar, Start Menu, Standard App Windows -->
-    <div id="user-layer">
-      <div id="desktop">
-        <div id="desktop-icons"></div>
-        
-        <!-- Start Menu -->
-        <div id="start-menu">
-          <div id="start-header">
-            <img id="start-user-avatar" src="https://img.icons8.com/color/48/000000/astronaut.png" alt="User" referrerPolicy="no-referrer">
-            <span id="start-user-name">Sam</span>
-          </div>
-          <div id="start-body">
-            <div id="start-left">
-              <!-- Pinned apps -->
-            </div>
-            <div id="start-right">
-              <div class="start-item" data-action="myDocs">My Documents</div>
-              <div class="start-item" data-action="myPics">My Pictures</div>
-              <div class="start-item" data-action="myMusic">My Music</div>
-              <hr>
-              <div class="start-item" data-action="myComputer">My Computer</div>
-              <div class="start-item" data-action="controlPanel">Control Panel</div>
-              <div class="start-item" data-action="securityCenter">Security Center</div>
-            </div>
-          </div>
-          <div id="start-footer">
-            <div class="footer-btn" id="btn-logoff">Log Off</div>
-            <div class="footer-btn" id="btn-turnoff">Turn Off Computer</div>
-          </div>
-        </div>
-
-        <!-- Taskbar -->
-        <div id="taskbar">
-          <button id="start-button">start</button>
-          <div id="task-items"></div>
-          <div id="system-tray">
-            <span id="clock">00:00 AM</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 2. User Layer: Desktop, Taskbar, Start Menu, Standard App Windows (Managed by Shell/WindowManager) -->
+    <div id="user-layer" style="display: none;"></div>
 
     <!-- 3. Administrative Layer: Tints the desktop, securely hosts UAC & Administrative Windows -->
     <div id="admin-layer" style="display: none;">

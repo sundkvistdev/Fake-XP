@@ -1,16 +1,19 @@
 import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
+import musicData from '../src/data/musicPlayerData.json';
 
 export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) {
+    const s = musicData.strings;
+    const initialTrack = musicData.tracks[0]?.name || 'No Track';
     const [getPlaying, setPlaying] = FCCF.useState<boolean>(false);
-    const [getCurrentTrack, setCurrentTrack] = FCCF.useState<string>('Beethoven - Symphony No. 9 (Ode to Joy)');
+    const [getCurrentTrack, setCurrentTrack] = FCCF.useState<string>(initialTrack);
     const [getProgress, setProgress] = FCCF.useState<number>(0);
     const [getVolume, setVolume] = FCCF.useState<number>(80);
 
     const statusBar = FCCF.Controls.StatusBar({
         panels: [
-            { text: 'Ready', flexGrow: true },
-            { text: '00:00', width: '4.375rem' },
-            { text: 'Windows Media Player 9', width: '9.375rem' }
+            { text: s.ready, flexGrow: true },
+            { text: s.initialTime, width: '4.375rem' },
+            { text: s.version, width: '9.375rem' }
         ]
     });
 
@@ -78,35 +81,23 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             vizCtx.fillStyle = '#00ff00';
             vizCtx.font = '12px Lucida Console';
             vizCtx.textAlign = 'center';
-            vizCtx.fillText('Windows Media Player', vizCanvas.width / 2, vizCanvas.height / 2);
+            vizCtx.fillText(s.appTitle, vizCanvas.width / 2, vizCanvas.height / 2);
         }
         animId = requestAnimationFrame(renderViz);
     };
 
     renderViz();
 
-    const playlist = [
-        'Beethoven - Symphony No. 9 (Ode to Joy)',
-        'Mozart - Eine kleine Nachtmusik',
-        'Vivaldi - Spring (The Four Seasons)',
-        'Chopin - Nocturne in E-flat major',
-        'Bach - Air on the G String'
-    ];
-
-    const freqs: Record<string, number> = {
-        'Beethoven - Symphony No. 9 (Ode to Joy)': 330,
-        'Mozart - Eine kleine Nachtmusik': 392,
-        'Vivaldi - Spring (The Four Seasons)': 440,
-        'Chopin - Nocturne in E-flat major': 494,
-        'Bach - Air on the G String': 261
-    };
+    const playlist = musicData.tracks.map(t => t.name);
+    const freqs: Record<string, number> = {};
+    musicData.tracks.forEach(t => { freqs[t.name] = t.frequency; });
 
     let trackSeconds = 0;
     let trackInterval: ReturnType<typeof setInterval> | null = null;
 
     const handlePlay = () => {
         setPlaying(true);
-        statusBar.setPanelText(0, `Playing: ${getCurrentTrack()}`);
+        statusBar.setPanelText(0, s.playing.replace('{track}', getCurrentTrack()));
         playTone(freqs[getCurrentTrack()] || 440);
         if (trackInterval) clearInterval(trackInterval);
         trackInterval = setInterval(() => {
@@ -121,7 +112,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     const handlePause = () => {
         setPlaying(false);
         stopTone();
-        statusBar.setPanelText(0, `Paused`);
+        statusBar.setPanelText(0, s.paused);
         if (trackInterval) clearInterval(trackInterval);
     };
 
@@ -129,8 +120,8 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         setPlaying(false);
         stopTone();
         trackSeconds = 0;
-        statusBar.setPanelText(0, 'Stopped');
-        statusBar.setPanelText(1, '00:00');
+        statusBar.setPanelText(0, s.stopped);
+        statusBar.setPanelText(1, s.initialTime);
         setProgress(0);
         if (trackInterval) clearInterval(trackInterval);
     };
@@ -147,9 +138,9 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         onItemClick: (item: string) => handleSelectTrack(item)
     });
 
-    const playBtn = FCCF.Controls.Button({ text: '▶ Play', onClick: handlePlay });
-    const pauseBtn = FCCF.Controls.Button({ text: '⏸ Pause', onClick: handlePause });
-    const stopBtn = FCCF.Controls.Button({ text: '⏹ Stop', onClick: handleStop });
+    const playBtn = FCCF.Controls.Button({ text: musicData.buttons.play, onClick: handlePlay });
+    const pauseBtn = FCCF.Controls.Button({ text: musicData.buttons.pause, onClick: handlePause });
+    const stopBtn = FCCF.Controls.Button({ text: musicData.buttons.stop, onClick: handleStop });
 
     const controlsRow = FCCF.Controls.Pane({
         style: { display: 'flex', gap: '0.375rem', justifyContent: 'center', padding: '0.375rem 0' },
@@ -161,7 +152,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'File',
                 menu: [
-                    { text: 'Open...', action: () => XP_API.showDialog({ title: 'Open Media', message: 'Select media file from C:\\Music\\', type: 'info' }) },
+                    { text: 'Open...', action: () => XP_API.showDialog({ title: s.openMediaTitle, message: s.openMediaMessage, type: 'info' }) },
                     { separator: true },
                     { text: 'Exit', action: () => {
                         handleStop();
@@ -180,7 +171,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'Help',
                 menu: [
-                    { text: 'About Windows Media Player', action: () => XP_API.showAboutDialog('Windows Media Player') }
+                    { text: `About ${s.appTitle}`, action: () => XP_API.showAboutDialog(s.aboutApp) }
                 ]
             }
         ]
@@ -197,12 +188,12 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     });
 
     const winId = FCCF.Window({
-        title: 'Windows Media Player',
+        title: s.appTitle,
         width: 380,
         height: 460,
         content: layout,
         resizable: true,
-        icon: 'https://img.icons8.com/color/48/000000/windows-media-player.png',
+        icon: s.icon,
         onClose: () => {
             handleStop();
             if (animId) cancelAnimationFrame(animId);

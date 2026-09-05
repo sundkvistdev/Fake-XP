@@ -1,0 +1,29 @@
+{
+  "strings": {
+    "appTitle": "Notepad",
+    "untitled": "Untitled",
+    "icon": "https://img.icons8.com/color/48/000000/notepad.png",
+    "savedSuccess": "File saved successfully to {path}.",
+    "savedAs": "File saved to {path}.",
+    "pageSetupTitle": "Page Setup",
+    "pageSetupMessage": "Paper size: Letter (8.5 x 11 in)\nOrientation: Portrait\nMargins: 0.75 in",
+    "printTitle": "Print",
+    "printMessage": "No local or network printer connected.",
+    "helpTitle": "Notepad Help",
+    "helpMessage": "Notepad is a basic text editor that you can use to create simple documents.",
+    "aboutTitle": "About Notepad",
+    "aboutMessage": "Microsoft (R) Notepad\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\nWin32 Human Interface Guidelines Compliant\n(C) Microsoft Corporation.",
+    "statusLineCol": "Ln {line}, Col {col}",
+    "statusEncoding": "Windows (CRLF)",
+    "statusZoom": "100%"
+  },
+  "fileFilters": [
+    { "label": "Text Documents (*.txt)", "ext": "txt" },
+    { "label": "All Files (*.*)", "ext": "*" }
+  ],
+  "fontSizes": [
+    { "label": "Font Size: 10 pt", "size": 10 },
+    { "label": "Font Size: 12 pt", "size": 12 },
+    { "label": "Font Size: 14 pt", "size": 14 }
+  ]
+}

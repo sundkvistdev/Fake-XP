@@ -1,0 +1,27 @@
+{
+  "definitions": "2001.10.25 (Latest)",
+  "realtimeStatus": "ON",
+  "strings": {
+    "title": "CentralFirm Security & Antivirus",
+    "icon": "https://img.icons8.com/color/48/000000/shield.png",
+    "defaultStatus": "Protected",
+    "statusScanning": "Scanning...",
+    "definitionsPrefix": "Definitions: ",
+    "realtimePrefix": "Real-time: ",
+    "systemStatusPrefix": "System Status: ",
+    "initialFile": "System files are monitored.",
+    "initialLog": "Antivirus Real-Time Shield Active.\nHeuristic Scanner initialized.\nReady for scan.",
+    "quickScan": "Quick Scan",
+    "fullScan": "Full System Scan",
+    "updateDefinitions": "Update Definitions",
+    "scanStarting": "Starting {mode} System Scan...\nScanning virtual file system directories:\n",
+    "cleanItem": "[OK] Clean: {path}\n",
+    "scanningLabel": "Scanning: {path}",
+    "scanFinishedLabel": "Scan Complete. 0 threats detected.",
+    "scanCompleteLog": "\nScan complete! 0 infections found. All {count} files verified clean.",
+    "scanCompleteDialogTitle": "Scan Complete",
+    "scanCompleteDialogMessage": "Full system scan completed successfully.\nScanned {count} items.\n0 threats detected.",
+    "updateDialogTitle": "Antivirus Update",
+    "updateDialogMessage": "Virus definitions are already up to date (Version 2001.10.25)."
+  }
+}

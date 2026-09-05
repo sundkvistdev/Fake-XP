@@ -1,0 +1,45 @@
+{
+  "associations": {
+    "txt": "notepad",
+    "log": "notepad",
+    "ini": "notepad",
+    "inf": "notepad",
+    "sys": "notepad",
+    "md": "notepad",
+    "bmp": "paint",
+    "png": "paint",
+    "jpg": "paint",
+    "jpeg": "paint",
+    "gif": "paint",
+    "mp3": "music",
+    "wav": "music",
+    "ogg": "music",
+    "cb": "clearbatch",
+    "clrb": "clearbatch",
+    "reg": "regedit",
+    "js": "ADR",
+    "adr": "ADR",
+    "ts": "ADR",
+    "lnk": "shell"
+  },
+  "appIcons": {
+    "dir": "https://img.icons8.com/color/48/000000/folder-invoices.png",
+    "default": "https://img.icons8.com/color/48/000000/file.png",
+    "notepad": "https://img.icons8.com/color/48/000000/notepad.png",
+    "calc": "https://img.icons8.com/color/48/000000/calculator.png",
+    "paint": "https://img.icons8.com/color/48/000000/paint-palette.png",
+    "cmd": "https://img.icons8.com/color/48/000000/console.png",
+    "clearbatch": "https://img.icons8.com/color/48/000000/processor.png",
+    "ADR": "https://img.icons8.com/color/48/000000/shield.png"
+  },
+  "shortcutIcons": {
+    "My Computer": "https://img.icons8.com/color/48/000000/monitor.png",
+    "Notepad": "https://img.icons8.com/color/48/000000/notepad.png",
+    "Command Prompt": "https://img.icons8.com/color/48/000000/console.png"
+  },
+  "openWith": {
+    "title": "Open With",
+    "message": "Windows cannot open this file: {path}\n\nWould you like to open it with Notepad?",
+    "fallbackApp": "notepad"
+  }
+}

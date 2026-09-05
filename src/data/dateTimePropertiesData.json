@@ -1,0 +1,37 @@
+{
+  "timeZones": [
+    "(GMT-08:00) Pacific Time (US & Canada)",
+    "(GMT-07:00) Mountain Time (US & Canada)",
+    "(GMT-06:00) Central Time (US & Canada)",
+    "(GMT-05:00) Eastern Time (US & Canada)",
+    "(GMT) Greenwich Mean Time : Dublin, Edinburgh, Lisbon, London",
+    "(GMT+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna",
+    "(GMT+08:00) Beijing, Chongqing, Hong Kong, Urumqi",
+    "(GMT+09:00) Osaka, Sapporo, Tokyo"
+  ],
+  "ntpServers": [
+    "time.windows.com",
+    "time.nist.gov",
+    "pool.ntp.org"
+  ],
+  "strings": {
+    "title": "Date and Time Properties",
+    "icon": "https://img.icons8.com/color/48/000000/calendar.png",
+    "tabs": {
+      "dateTime": "Date & Time",
+      "timeZone": "Time Zone",
+      "internetTime": "Internet Time"
+    },
+    "dateLegend": "Date",
+    "timeLegend": "Time",
+    "dstLabel": "Automatically adjust clock for daylight saving changes",
+    "syncLabel": "Automatically synchronize with an Internet time server",
+    "updateNow": "Update Now",
+    "syncSuccess": "The time was successfully synchronized with {server} on {date} at {time}.",
+    "syncing": "Synchronizing with {server}...",
+    "btnOk": "OK",
+    "btnCancel": "Cancel",
+    "btnApply": "Apply",
+    "appliedNotice": "Date and Time settings updated."
+  }
+}

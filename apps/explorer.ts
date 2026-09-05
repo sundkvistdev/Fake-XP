@@ -60,6 +60,55 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         }
     };
 
+    const safeDelete = (targetPath: string, itemName: string, onDone: () => void) => {
+        const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:delete', targetPath) : { allowed: true };
+        if (!check.allowed) {
+            if (check.requiresElevation) {
+                XP_API.showDialog({
+                    type: 'confirm',
+                    title: 'Administrator Permission Required',
+                    message: `${check.reason || 'You need administrator privileges to delete this file/folder.'}\n\nDo you want to provide administrator credentials?`,
+                    onOk: () => {
+                        XP_API.UAC.requestEscalation((granted) => {
+                            if (granted) {
+                                const ok = VFS.delete(targetPath);
+                                if (ok) {
+                                    onDone();
+                                } else {
+                                    XP_API.showDialog({ title: 'Error', message: 'Could not delete item.', type: 'error' });
+                                }
+                            } else {
+                                XP_API.showDialog({ title: 'Access Denied', message: 'Operation cancelled or elevation denied.', type: 'error' });
+                            }
+                        });
+                    }
+                });
+                return;
+            } else {
+                XP_API.showDialog({
+                    title: 'Access Denied',
+                    message: check.reason || 'You do not have permission to delete this item.',
+                    type: 'error'
+                });
+                return;
+            }
+        }
+
+        XP_API.showDialog({
+            type: 'confirm',
+            title: 'Confirm File Delete',
+            message: `Are you sure you want to delete '${itemName}'?`,
+            onOk: () => {
+                const ok = VFS.delete(targetPath);
+                if (ok) {
+                    onDone();
+                } else {
+                    XP_API.showDialog({ title: 'Error', message: 'Unable to delete item.', type: 'error' });
+                }
+            }
+        });
+    };
+
     if (isDesktop) {
         const desktopIcons = document.getElementById('desktop-icons');
         const renderDesktop = () => {
@@ -95,14 +144,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                         { text: 'Cut' },
                         { text: 'Copy' },
                         { separator: true },
-                        { text: 'Delete', action: () => {
-                            XP_API.showDialog({
-                                type: 'confirm',
-                                title: 'Confirm File Delete',
-                                message: `Are you sure you want to send '${item}' to the Recycle Bin?`,
-                                onOk: () => { VFS.delete(fullPath); renderDesktop(); }
-                            });
-                        }},
+                        { text: 'Delete', action: () => safeDelete(fullPath, item, renderDesktop) },
                         { text: 'Rename', action: () => {
                             XP_API.showDialog({
                                 type: 'prompt',
@@ -111,6 +153,11 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                                 value: item,
                                 onOk: (newName) => {
                                     if (typeof newName === 'string' && newName.trim()) {
+                                        const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:write', fullPath) : { allowed: true };
+                                        if (!check.allowed) {
+                                            XP_API.showDialog({ title: 'Access Denied', message: check.reason || 'Cannot rename this item.', type: 'error' });
+                                            return;
+                                        }
                                         VFS.rename(fullPath, newName.trim());
                                         renderDesktop();
                                     }
@@ -287,14 +334,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             { text: 'Cut' },
             { text: 'Copy' },
             { separator: true },
-            { text: 'Delete', action: () => {
-                XP_API.showDialog({
-                    type: 'confirm',
-                    title: 'Confirm Delete',
-                    message: `Are you sure you want to delete '${item}'?`,
-                    onOk: () => { VFS.delete(fullPath); renderContents(getPath()); }
-                });
-            }},
+            { text: 'Delete', action: () => safeDelete(fullPath, item, () => renderContents(getPath())) },
             { text: 'Rename', action: () => {
                 XP_API.showDialog({
                     type: 'prompt',
@@ -303,6 +343,11 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                     value: item,
                     onOk: (name) => {
                         if (typeof name === 'string' && name.trim()) {
+                            const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:write', fullPath) : { allowed: true };
+                            if (!check.allowed) {
+                                XP_API.showDialog({ title: 'Access Denied', message: check.reason || 'Cannot rename this item.', type: 'error' });
+                                return;
+                            }
                             VFS.rename(fullPath, name.trim());
                             renderContents(getPath());
                         }
@@ -333,12 +378,24 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             { separator: true },
             { text: 'New', menu: [
                 { text: 'Folder', action: () => {
-                    const newPath = `${getPath()}/New Folder`;
+                    const curPath = getPath();
+                    const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:write', curPath) : { allowed: true };
+                    if (!check.allowed) {
+                        XP_API.showDialog({ title: 'Access Denied', message: check.reason || 'Cannot create folder here.', type: 'error' });
+                        return;
+                    }
+                    const newPath = `${curPath}/New Folder`;
                     VFS.mkdir(newPath);
                     renderContents(getPath());
                 }},
                 { text: 'Text Document', action: () => {
-                    const newPath = `${getPath()}/New Document.txt`;
+                    const curPath = getPath();
+                    const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:write', curPath) : { allowed: true };
+                    if (!check.allowed) {
+                        XP_API.showDialog({ title: 'Access Denied', message: check.reason || 'Cannot create files here.', type: 'error' });
+                        return;
+                    }
+                    const newPath = `${curPath}/New Document.txt`;
                     VFS.writeFile(newPath, '');
                     renderContents(getPath());
                 }}

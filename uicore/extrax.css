@@ -10,7 +10,7 @@
     width: 100vw;
     height: 100vh;
     z-index: 100000;
-    display: none;
+    display: block;
 }
 
 #user-layer {
@@ -19,6 +19,7 @@
     height: 100vh;
     z-index: 1;
     overflow: hidden;
+    display: none;
 }
 
 #admin-layer {
@@ -40,6 +41,7 @@
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: grayscale(70%) brightness(80%);
     z-index: 50001;
+    pointer-events: auto;
 }
 
 #admin-windows {
@@ -49,10 +51,11 @@
     width: 100%;
     height: 100%;
     z-index: 50002;
+    pointer-events: none;
+}
+
+#admin-windows > .window {
     pointer-events: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 /* 2. Fix duplicate resize grip when status bar is present */
@@ -78,10 +81,11 @@
     flex-direction: column;
     height: 100%;
     width: 100%;
-    background: #ffffff;
+    background: #ece9d8;
+    color: #000000;
     box-sizing: border-box;
     overflow: hidden;
-    font-family: Tahoma, 'Segoe UI', sans-serif;
+    font-family: Tahoma, 'Segoe UI', Arial, sans-serif;
     font-size: 11px;
 }
 
@@ -99,22 +103,28 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.125rem 0.375rem;
-    border: 1px solid transparent;
-    background: transparent;
+    padding: 0.1875rem 0.5rem;
+    border: 1px solid #003c74;
+    background: linear-gradient(180deg, #ffffff 0%, #ece9d8 45%, #d8d0c4 50%, #ece9d8 100%);
+    color: #000000;
     cursor: pointer;
-    border-radius: 2px;
+    border-radius: 3px;
     font-size: 11px;
+    font-family: inherit;
+    font-weight: 500;
 }
 
 .extrax-nav-btn:hover:not(:disabled) {
-    border-color: #7f9db9;
-    background: #e5f3ff;
+    background: linear-gradient(180deg, #ffffff 0%, #f9e29a 45%, #f4cb50 50%, #f9e29a 100%);
+    border-color: #e5a01a;
 }
 
 .extrax-nav-btn:disabled {
-    opacity: 0.45;
+    opacity: 0.5;
     cursor: default;
+    border-color: #aca899;
+    background: #ece9d8;
+    color: #888888;
 }
 
 .extrax-address-bar {
@@ -130,10 +140,16 @@
 .extrax-address-input {
     flex: 1;
     background: #ffffff;
+    color: #000000;
     border: 1px solid #7f9db9;
-    padding: 0.125rem 0.375rem;
+    padding: 0.1875rem 0.375rem;
     font-size: 11px;
+    font-family: inherit;
     outline: none;
+}
+
+.extrax-address-input:focus {
+    border-color: #316ac5;
 }
 
 .extrax-body {
@@ -142,11 +158,12 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    background: #ffffff;
 }
 
-/* Classic Windows XP Blue Task Pane */
+/* Classic Shell Task Pane */
 .extrax-taskpane {
-    width: 13rem;
+    width: 13.5rem;
     background: linear-gradient(to bottom, #7ba2e7 0%, #6375d6 100%);
     overflow-y: auto;
     overflow-x: hidden;
@@ -155,16 +172,15 @@
     flex-direction: column;
     gap: 0.625rem;
     flex-shrink: 0;
-    border-right: 1px solid #aca899;
+    border-right: 1px solid #5a6eb8;
     box-sizing: border-box;
 }
 
 .extrax-expando {
     background: #ffffff;
     border-radius: 4px 4px 0 0;
-    border: 1px solid #ffffff;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.15);
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .extrax-expando-header {
@@ -172,12 +188,13 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.25rem 0.5rem;
-    background: linear-gradient(to right, #215dc6 0%, #6392e6 100%);
+    background: linear-gradient(to right, #215dc6 0%, #3f80ea 100%);
     color: #ffffff;
     font-weight: bold;
     font-size: 11px;
     cursor: pointer;
     user-select: none;
+    border-radius: 4px 4px 0 0;
 }
 
 .extrax-expando-header.secondary {
@@ -191,23 +208,25 @@
     display: flex;
     flex-direction: column;
     gap: 0.375rem;
+    border: 1px solid #ffffff;
+    border-top: none;
 }
 
 .extrax-task-item {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    color: #0c327d;
+    color: #215dc6;
     cursor: pointer;
     text-decoration: none;
     font-size: 11px;
     user-select: none;
-    padding: 0.125rem;
+    padding: 0.125rem 0.25rem;
     border-radius: 2px;
 }
 
 .extrax-task-item:hover {
-    color: #ff3300;
+    color: #428eff;
     text-decoration: underline;
 }
 
@@ -218,10 +237,83 @@
     flex-shrink: 0;
 }
 
+/* ExtraX Ordered Data Manager: White background content area */
+.extrax-ordered-manager {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    background: #ffffff;
+    color: #000000;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.extrax-web-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.375rem 0.625rem;
+    background: #ffffff;
+    border-bottom: 1px solid #e0e0e0;
+    gap: 0.625rem;
+    flex-shrink: 0;
+}
+
+.extrax-web-title-group {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.extrax-web-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #003399;
+}
+
+.extrax-web-count {
+    font-size: 11px;
+    color: #666666;
+}
+
+.extrax-web-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.extrax-web-search {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #7f9db9;
+    padding: 0.25rem 0.5rem;
+    font-size: 11px;
+    font-family: inherit;
+    border-radius: 2px;
+    outline: none;
+    width: 13rem;
+}
+
+.extrax-web-search:focus {
+    border-color: #316ac5;
+}
+
+.extrax-ordered-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+    background: #ffffff;
+    min-height: 0;
+    box-sizing: border-box;
+}
+
 /* ExtraX Main Content Canvas */
 .extrax-content {
     flex: 1;
     background: #ffffff;
+    color: #000000;
     overflow: auto;
     padding: 0.75rem;
     box-sizing: border-box;
@@ -233,32 +325,39 @@
     font-weight: bold;
     color: #003399;
     margin-bottom: 0.75rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid #aca899;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-/* Category View */
+/* Category View - Clean White Background */
 .extrax-categories-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 0.875rem;
+    gap: 0.75rem;
 }
 
 .extrax-cat-card {
     display: flex;
-    gap: 0.625rem;
+    gap: 0.75rem;
     align-items: flex-start;
     padding: 0.625rem;
-    border-radius: 4px;
+    background: #ffffff;
     border: 1px solid transparent;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.1s, border-color 0.1s;
 }
 
 .extrax-cat-card:hover {
-    background: #e5f3ff;
-    border-color: #b8d6fb;
+    background: #f0f4fc;
+    border-color: #b8cfe5;
+}
+
+.extrax-cat-card:focus-visible {
+    outline: 1px dotted #316ac5;
 }
 
 .extrax-cat-icon {
@@ -280,8 +379,13 @@
     font-size: 12px;
 }
 
+.extrax-cat-card:hover .extrax-cat-title {
+    color: #0055ea;
+    text-decoration: underline;
+}
+
 .extrax-cat-desc {
-    color: #444444;
+    color: #555555;
     font-size: 11px;
     line-height: 1.35;
 }
@@ -289,28 +393,32 @@
 /* Icons / Tiles View */
 .extrax-icons-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    gap: 0.875rem;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 0.75rem;
     padding: 0.5rem;
+    background: #ffffff;
 }
 
 .extrax-tiles-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 0.75rem;
+    gap: 0.625rem;
     padding: 0.5rem;
+    background: #ffffff;
 }
 
 .extrax-icon-item,
-.extrax-applet-item {
+.extrax-applet-item,
+.extrax-tile-item {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.375rem;
     border: 1px solid transparent;
-    border-radius: 2px;
+    border-radius: 3px;
     cursor: pointer;
-    background: transparent;
+    background: #ffffff;
+    color: #000000;
     user-select: none;
     outline: none;
 }
@@ -318,31 +426,111 @@
 .extrax-icons-grid .extrax-applet-item {
     flex-direction: column;
     text-align: center;
-    padding: 0.5rem 0.25rem;
+    padding: 0.5rem 0.375rem;
 }
 
-.extrax-tiles-grid .extrax-applet-item {
+.extrax-tiles-grid .extrax-applet-item,
+.extrax-tile-item {
     flex-direction: row;
     align-items: flex-start;
     padding: 0.5rem;
-    border: 1px solid #e0e0e0;
-    background: #ffffff;
 }
 
 .extrax-icon-item:hover,
-.extrax-applet-item:hover {
-    background: #e5f3ff;
-    border-color: #7f9db9;
+.extrax-applet-item:hover,
+.extrax-tile-item:hover {
+    background: #e5f1fb;
+    border-color: #70c0e7;
 }
 
 .extrax-icon-item.selected,
-.extrax-applet-item.selected {
-    background: #0055ea !important;
+.extrax-applet-item.selected,
+.extrax-tile-item.selected {
+    background: #316ac5 !important;
     color: #ffffff !important;
+    border-color: #316ac5;
 }
 
 .extrax-icon-item.selected span,
-.extrax-applet-item.selected span {
+.extrax-applet-item.selected span,
+.extrax-tile-item.selected span,
+.extrax-tile-item.selected .extrax-tile-title,
+.extrax-tile-item.selected .extrax-tile-desc {
+    color: #ffffff !important;
+}
+
+.extrax-icon-item:focus-visible,
+.extrax-applet-item:focus-visible,
+.extrax-tile-item:focus-visible {
+    outline: 1px dotted #316ac5;
+}
+
+.extrax-tile-title {
+    font-weight: bold;
+    color: #000000;
+    font-size: 11px;
+}
+
+.extrax-tile-desc {
+    color: #555555;
+    font-size: 11px;
+    margin-top: 0.125rem;
+    line-height: 1.35;
+}
+
+/* Details / Table View */
+.extrax-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    background: #ffffff;
+}
+
+.extrax-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #aca899;
+    font-size: 11px;
+}
+
+.extrax-table th {
+    background: #ece9d8;
+    color: #000000;
+    font-weight: normal;
+    border: 1px solid #aca899;
+    padding: 0.25rem 0.5rem;
+    text-align: left;
+    user-select: none;
+    cursor: pointer;
+}
+
+.extrax-table th:hover {
+    background: #f0ede0;
+}
+
+.extrax-table td {
+    background: #ffffff;
+    color: #000000;
+    border-bottom: 1px solid #f0f0f0;
+    padding: 0.25rem 0.5rem;
+    vertical-align: middle;
+}
+
+.extrax-table tr:hover td {
+    background: #f2f7fd;
+}
+
+.extrax-table tr.selected td {
+    background: #316ac5;
+    color: #ffffff;
+}
+
+.extrax-table tr.selected td span {
+    color: #ffffff !important;
+}
+
+.extrax-table tr.selected td a {
     color: #ffffff !important;
 }
 

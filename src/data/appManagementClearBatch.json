@@ -1,0 +1,213 @@
+{
+  "type": "ClearBatchApp",
+  "version": "2.2",
+  "layout": "extrax",
+  "meta": {
+    "name": "Add or Remove Programs",
+    "author": "Samsoft Corporation / ClearBatch Runtime",
+    "description": "Software Installer, Uninstaller and Windows Component Manager"
+  },
+  "window": {
+    "title": "Add or Remove Programs",
+    "width": 640,
+    "height": 480,
+    "icon": "https://img.icons8.com/color/48/000000/add-folder.png"
+  },
+  "extrax": {
+    "navBar": false,
+    "addressBar": false,
+    "headerTitle": "Currently installed programs:",
+    "taskpane": [
+      {
+        "title": "Programs",
+        "items": [
+          { "text": "Change or Remove Programs", "icon": "https://img.icons8.com/color/16/000000/add-folder.png", "action": "selectInstalled" },
+          { "text": "Add New Programs", "icon": "https://img.icons8.com/color/16/000000/software-installer.png", "action": "addNewProg" },
+          { "text": "Add/Remove Windows Components", "icon": "https://img.icons8.com/color/16/000000/puzzle.png", "action": "winComponents" }
+        ]
+      }
+    ]
+  },
+  "initialState": {
+    "selectedProgram": "Winamp 5.666",
+    "status": "Ready."
+  },
+  "tabs": [
+    {
+      "id": "tabInstalled",
+      "title": "Currently Installed",
+      "sections": [
+        {
+          "title": "Programs List",
+          "fields": [
+            {
+              "id": "searchProg",
+              "type": "search",
+              "placeholder": "Search installed applications...",
+              "filterTarget": "installedGrid"
+            },
+            {
+              "id": "installedGrid",
+              "type": "cards",
+              "cards": [
+                {
+                  "id": "progWinamp",
+                  "title": "Winamp 5.666 Pro",
+                  "icon": "https://img.icons8.com/color/48/000000/audio-wave.png",
+                  "description": "Size: 14.2 MB | Used: Frequently | Last Used: Today",
+                  "action": "modifyWinamp",
+                  "subtasks": [
+                    { "label": "Change / Remove", "action": "modifyWinamp" }
+                  ]
+                },
+                {
+                  "id": "progWmp",
+                  "title": "Windows Media Player 10",
+                  "icon": "https://img.icons8.com/color/48/000000/windows-media-player.png",
+                  "description": "Size: 28.5 MB | Used: Occasionally | Last Used: Yesterday",
+                  "action": "modifyWmp",
+                  "subtasks": [
+                    { "label": "Roll back to previous version", "action": "modifyWmp" }
+                  ]
+                },
+                {
+                  "id": "progMsn",
+                  "title": "MSN Messenger 7.5",
+                  "icon": "https://img.icons8.com/color/48/000000/msn.png",
+                  "description": "Size: 8.7 MB | Used: Frequently | Last Used: Today",
+                  "action": "modifyMsn",
+                  "subtasks": [
+                    { "label": "Change / Remove", "action": "modifyMsn" }
+                  ]
+                },
+                {
+                  "id": "progPinball",
+                  "title": "3D Pinball for Windows - Space Cadet",
+                  "icon": "https://img.icons8.com/color/48/000000/pinball.png",
+                  "description": "Size: 4.5 MB | Used: Frequently | Last Used: Today",
+                  "action": "modifyPinball",
+                  "subtasks": [
+                    { "label": "Change / Remove", "action": "modifyPinball" }
+                  ]
+                },
+                {
+                  "id": "progDirectX",
+                  "title": "DirectX 9.0c End-User Runtime",
+                  "icon": "https://img.icons8.com/color/48/000000/video-card.png",
+                  "description": "Size: 52.1 MB | System Component",
+                  "action": "directXInfo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tabAddNew",
+      "title": "Add New Programs",
+      "sections": [
+        {
+          "title": "Add programs from CD-ROM or floppy disk",
+          "fields": [
+            {
+              "id": "btnCdFloppy",
+              "type": "button",
+              "buttonText": "CD or Floppy...",
+              "action": "browseInstaller"
+            }
+          ]
+        },
+        {
+          "title": "Add programs from Samsoft",
+          "fields": [
+            {
+              "id": "btnWindowsUpdate",
+              "type": "button",
+              "buttonText": "Windows Update...",
+              "action": "openUpdate"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": {
+    "selectInstalled": [
+      { "task": "notify", "title": "Add or Remove Programs", "message": "Showing currently installed software." }
+    ],
+    "addNewProg": [
+      { "task": "notify", "title": "Add New Programs", "message": "Select installation media or check for updates." }
+    ],
+    "winComponents": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Windows Components Wizard",
+        "message": "Windows Components:\n[X] Internet Explorer\n[X] Accessories and Utilities\n[X] Management and Monitoring Tools\n\nAll core components are active."
+      }
+    ],
+    "modifyWinamp": [
+      {
+        "task": "dialog",
+        "dialogType": "confirm",
+        "title": "Winamp 5.666 Uninstall",
+        "message": "Are you sure you want to completely remove Winamp 5.666 and all of its components?"
+      }
+    ],
+    "modifyWmp": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Windows Media Player 10",
+        "message": "Windows Media Player is a protected system component. Use Turn Windows Features On or Off to manage media capabilities."
+      }
+    ],
+    "modifyMsn": [
+      {
+        "task": "dialog",
+        "dialogType": "confirm",
+        "title": "MSN Messenger 7.5 Maintenance",
+        "message": "Select an action for MSN Messenger 7.5:\n• Repair\n• Modify\n• Remove"
+      }
+    ],
+    "modifyPinball": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "3D Pinball for Windows",
+        "message": "3D Pinball Space Cadet is ready to play. Launch game from Start > All Programs > Games > 3D Pinball."
+      }
+    ],
+    "directXInfo": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "DirectX Runtime",
+        "message": "DirectX 9.0c runtime libraries are up to date and provide hardware acceleration for Direct3D and DirectSound."
+      }
+    ],
+    "browseInstaller": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Install Program From Floppy Disk or CD-ROM",
+        "message": "Please insert the product's installation disc into drive D: or floppy drive A: and click Next."
+      }
+    ],
+    "openUpdate": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Windows Update",
+        "message": "Windows Update service is checking for the latest updates for your computer..."
+      }
+    ]
+  },
+  "statusBar": {
+    "panels": [
+      { "text": "5 programs installed", "flexGrow": true },
+      { "text": "ClearBatch v2.2", "width": "9rem" }
+    ]
+  }
+}

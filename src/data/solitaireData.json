@@ -1,0 +1,27 @@
+{
+  "suits": ["♠", "♣", "♥", "♦"],
+  "rankNames": {
+    "1": "A", "2": "2", "3": "3", "4": "4", "5": "5", "6": "6", "7": "7", "8": "8", "9": "9", "10": "10", "11": "J", "12": "Q", "13": "K"
+  },
+  "strings": {
+    "title": "Solitaire",
+    "icon": "https://img.icons8.com/color/48/000000/playing-cards.png",
+    "scorePrefix": "Score: ",
+    "timePrefix": "Time: ",
+    "timeSuffix": "s",
+    "statusTitle": "Klondike Solitaire",
+    "gameMenu": "Game",
+    "helpMenu": "Help",
+    "deal": "Deal",
+    "undo": "Undo",
+    "deck": "Deck...",
+    "options": "Options...",
+    "exit": "Exit",
+    "helpTopics": "Help Topics",
+    "about": "About Solitaire",
+    "helpMessage": "Solitaire is a classic card game. Stack cards in descending order with alternating colors.",
+    "aboutMessage": "Solitaire\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\n(C) Microsoft Corporation.",
+    "winTitle": "Game Over",
+    "winMessage": "Congratulations! You won with a score of {score} in {time} seconds!"
+  }
+}

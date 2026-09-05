@@ -1,0 +1,19 @@
+{
+  "strings": {
+    "accessDeniedTitle": "Access Denied",
+    "guestDeleteRestricted": "Guest accounts are not permitted to delete or alter protected system directories or files.",
+    "guestWriteRestricted": "Guest accounts cannot write to protected system directories.",
+    "elevationRequiredTitle": "Administrator Elevation Required",
+    "elevationRequiredMessage": "This action modifies protected system files and requires administrative privileges. Would you like to provide administrator credentials to proceed?",
+    "elevationSuccess": "Elevation verified. Permission granted.",
+    "elevationFailed": "Elevation denied. The requested action has been cancelled.",
+    "sessionTerminated": "User session ended. Logging off.",
+    "deleteConfirmTitle": "Confirm File Delete",
+    "deleteConfirmMessage": "Are you sure you want to permanently delete this item?",
+    "genericDenied": "You do not have permission to perform this action."
+  },
+  "balloon": {
+    "arrowOffsetPx": 34,
+    "gapAboveTrayPx": 6
+  }
+}

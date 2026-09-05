@@ -1,27 +1,51 @@
-import { User, IKernel } from './types';
+import { User, IKernel, IAccessControl, AccessCheckResult, SystemAction } from './types';
+import sessionConfig from './data/sessionConfig.json';
+import { interpolateString } from './clearbatch_engine';
 
-export interface AccessCheckResult {
-    allowed: boolean;
-    reason?: string;
-    requiresElevation?: boolean;
-}
-
-export type SystemAction = 
-    | 'file:read'
-    | 'file:write'
-    | 'file:delete'
-    | 'registry:read'
-    | 'registry:write'
-    | 'registry:delete'
-    | 'app:exec'
-    | 'system:shutdown'
-    | 'system:admin';
-
-export class AccessControlLayer {
+export class AccessControlLayer implements IAccessControl {
     private readonly _kernel: IKernel;
 
     constructor(kernelRef: IKernel) {
         this._kernel = kernelRef;
+    }
+
+    private _normalizePath(path?: string): string {
+        if (!path) return '';
+        let normalized = path.replace(/\\/g, '/').trim();
+        if (normalized.length > 3 && normalized.endsWith('/')) {
+            normalized = normalized.slice(0, -1);
+        }
+        return normalized;
+    }
+
+    private _isProtectedPath(targetPath: string): boolean {
+        const normalized = this._normalizePath(targetPath);
+        if (!normalized) return false;
+
+        const lower = normalized.toLowerCase();
+        if (lower === 'c:' || lower === 'c:/') {
+            const rootStat = this._kernel.VFS.stat('C:');
+            return !!(rootStat?.metadata?.protected);
+        }
+
+        // 1. Direct check on node metadata
+        const targetStat = this._kernel.VFS.stat(normalized);
+        if (targetStat?.metadata?.protected) {
+            return true;
+        }
+
+        // 2. Hierarchical parent directory inheritance check
+        const parts = normalized.split('/').filter(p => p.length > 0);
+        while (parts.length > 1) {
+            parts.pop();
+            const parentPath = parts.join('/');
+            const parentStat = this._kernel.VFS.stat(parentPath);
+            if (parentStat?.metadata?.protected) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public checkAccess(
@@ -29,67 +53,118 @@ export class AccessControlLayer {
         target?: string,
         callerUser?: User | null
     ): AccessCheckResult {
-        const user = callerUser || this._kernel.Auth.getCurrentUser();
-        const role = user?.privilege || (user?.username === 'Administrator' || user?.username === 'Sam' ? 'admin' : 'user');
+        // If session is already elevated, allow administrative operations
+        if (this._kernel.Session && this._kernel.Session.isElevated()) {
+            return { allowed: true };
+        }
 
-        // Administrator role has unrestricted access
+        const guestUsername = this._kernel.Registry.get<string>('Security/Session/GuestUsername', 'Guest');
+        const adminUsernames = this._kernel.Registry.get<string[]>('Security/Session/AdminUsernames', ['Administrator', 'Sam']);
+        const restrictedApps = this._kernel.Registry.get<string[]>('Security/Session/RestrictedApps', [
+            'regedit', 'secpol', 'adminManager', 'userAccounts'
+        ]);
+
+        const user = callerUser || this._kernel.Auth.getCurrentUser();
+        const role = user?.privilege || (user?.username && adminUsernames.includes(user.username) ? 'admin' : (user?.username === guestUsername ? 'guest' : 'user'));
+
+        // Computer Administrator has unrestricted native access
         if (role === 'admin') {
             return { allowed: true };
         }
 
-        // Guest role checks
+        const normalizedTarget = this._normalizePath(target);
+        const formatString = (tmpl: string) => interpolateString(tmpl, { target: normalizedTarget, user: user?.username || '' }, this._kernel);
+
+        // Guest role checks - guest is untrusted and strictly sandboxed
         if (role === 'guest') {
-            if (action === 'file:write' || action === 'file:delete') {
-                if (target?.startsWith('C:/System') || target?.startsWith('C:/Windows') || target?.startsWith('C:/Program Files')) {
+            if (action === 'file:delete') {
+                if (this._isProtectedPath(normalizedTarget)) {
                     return {
                         allowed: false,
-                        reason: 'Guest accounts cannot modify protected system directories.',
+                        reason: formatString(sessionConfig.strings.guestDeleteRestricted),
                         requiresElevation: true
                     };
                 }
             }
+
+            if (action === 'file:write') {
+                if (this._isProtectedPath(normalizedTarget)) {
+                    return {
+                        allowed: false,
+                        reason: formatString(sessionConfig.strings.guestWriteRestricted),
+                        requiresElevation: true
+                    };
+                }
+            }
+
             if (action === 'registry:write' || action === 'registry:delete') {
                 return {
                     allowed: false,
-                    reason: 'Guest accounts are not permitted to modify system registry keys.',
+                    reason: formatString(sessionConfig.strings.guestWriteRestricted),
                     requiresElevation: true
                 };
             }
-            if (action === 'app:exec' && (target === 'regedit' || target === 'secpol' || target === 'cmd')) {
+
+            if (action === 'app:exec') {
+                const appName = normalizedTarget.toLowerCase();
+                if (restrictedApps.includes(appName)) {
+                    return {
+                        allowed: false,
+                        reason: formatString(sessionConfig.strings.elevationRequiredMessage),
+                        requiresElevation: true
+                    };
+                }
+            }
+
+            if (action === 'system:admin') {
                 return {
                     allowed: false,
-                    reason: 'Administrative utility requires administrator credentials.',
+                    reason: formatString(sessionConfig.strings.guestDeleteRestricted),
                     requiresElevation: true
                 };
             }
+
             return { allowed: true };
         }
 
         // Standard user checks
-        if (action === 'file:write' || action === 'file:delete') {
-            if (target?.startsWith('C:/System') || target?.startsWith('C:/Windows')) {
+        if (action === 'file:delete' || action === 'file:write') {
+            if (this._isProtectedPath(normalizedTarget)) {
                 return {
                     allowed: false,
-                    reason: 'Modifying system files requires administrative privileges.',
+                    reason: action === 'file:delete' 
+                        ? formatString(sessionConfig.strings.elevationRequiredMessage)
+                        : formatString(sessionConfig.strings.guestWriteRestricted),
                     requiresElevation: true
                 };
             }
         }
 
         if (action === 'registry:write' || action === 'registry:delete') {
-            if (target?.startsWith('HKEY_LOCAL_MACHINE') || target?.startsWith('Security')) {
+            if (normalizedTarget.startsWith('HKEY_LOCAL_MACHINE') || normalizedTarget.startsWith('Security')) {
                 return {
                     allowed: false,
-                    reason: 'Modifying machine-wide security policies requires elevation.',
+                    reason: formatString(sessionConfig.strings.elevationRequiredMessage),
                     requiresElevation: true
                 };
             }
         }
 
-        if (action === 'app:exec' && (target === 'regedit' || target === 'secpol')) {
+        if (action === 'app:exec') {
+            const appName = normalizedTarget.toLowerCase();
+            if (restrictedApps.includes(appName)) {
+                return {
+                    allowed: false,
+                    reason: formatString(sessionConfig.strings.elevationRequiredMessage),
+                    requiresElevation: true
+                };
+            }
+        }
+
+        if (action === 'system:admin') {
             return {
                 allowed: false,
-                reason: 'Registry Editor and Security Policies require elevation.',
+                reason: formatString(sessionConfig.strings.elevationRequiredMessage),
                 requiresElevation: true
             };
         }
@@ -97,3 +172,4 @@ export class AccessControlLayer {
         return { allowed: true };
     }
 }
+export default AccessControlLayer;

@@ -1,0 +1,23 @@
+{
+  "playlist": [
+    { "title": "Beethoven - Symphony No. 9 (Ode to Joy)", "freq": 330 },
+    { "title": "Mozart - Eine kleine Nachtmusik", "freq": 392 },
+    { "title": "Vivaldi - Spring (The Four Seasons)", "freq": 440 },
+    { "title": "Chopin - Nocturne in E-flat major", "freq": 494 },
+    { "title": "Bach - Air on the G String", "freq": 261 }
+  ],
+  "strings": {
+    "title": "Windows Media Player",
+    "icon": "https://img.icons8.com/color/48/000000/cd.png",
+    "ready": "Ready",
+    "playingPrefix": "Playing: ",
+    "playerVersion": "Windows Media Player 9",
+    "vizLabel": "Windows Media Player",
+    "playTooltip": "Play",
+    "pauseTooltip": "Pause",
+    "stopTooltip": "Stop",
+    "prevTooltip": "Previous Track",
+    "nextTooltip": "Next Track",
+    "volLabel": "Vol: "
+  }
+}

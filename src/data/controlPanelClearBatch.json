@@ -1,6 +1,7 @@
 {
   "type": "ClearBatchApp",
-  "version": "2.1",
+  "version": "2.2",
+  "layout": "extrax",
   "meta": {
     "name": "Control Panel",
     "author": "Samsoft Corporation / ClearBatch Runtime",
@@ -8,15 +9,39 @@
   },
   "window": {
     "title": "Control Panel",
-    "width": 720,
-    "height": 540,
+    "width": 780,
+    "height": 560,
     "icon": "https://img.icons8.com/color/48/000000/control-panel.png"
+  },
+  "extrax": {
+    "navBar": true,
+    "addressBar": true,
+    "initialAddress": "Control Panel",
+    "headerTitle": "Pick a category",
+    "taskpane": [
+      {
+        "title": "Control Panel",
+        "items": [
+          { "text": "Switch to Classic View", "icon": "https://img.icons8.com/color/16/000000/grid.png", "action": "showClassic" },
+          { "text": "Switch to Category View", "icon": "https://img.icons8.com/color/16/000000/folder-invoices.png", "action": "showCategories" }
+        ]
+      },
+      {
+        "title": "See Also",
+        "secondary": true,
+        "items": [
+          { "text": "Windows Security Center", "icon": "https://img.icons8.com/color/16/000000/security-checked.png", "action": "openSecurityCenter" },
+          { "text": "System Information", "icon": "https://img.icons8.com/color/16/000000/system-information.png", "action": "openSystem" },
+          { "text": "Help and Support", "icon": "https://img.icons8.com/color/16/000000/help.png", "action": "showHelp" }
+        ]
+      }
+    ]
   },
   "initialState": {
     "firewallStatus": "Active & Monitored",
     "avStatus": "Real-time Shield Enabled",
     "updatesStatus": "Configured (Automatic)",
-    "clearbatchStatus": "ClearBatch v2.1 Declarative Engine Ready",
+    "currentAddress": "Control Panel",
     "statusMessage": "Choose a category or launch an applet"
   },
   "menu": [
@@ -29,12 +54,14 @@
     {
       "text": "View",
       "items": [
-        { "text": "Refresh", "action": "refreshStatus" }
+        { "text": "Category View", "action": "showCategories" },
+        { "text": "Classic View", "action": "showClassic" }
       ]
     },
     {
       "text": "Help",
       "items": [
+        { "text": "Help Topics", "action": "showHelp" },
         { "text": "About Control Panel", "action": "showAbout" }
       ]
     }
@@ -45,43 +72,95 @@
       "title": "Category View",
       "sections": [
         {
-          "type": "group",
           "title": "Pick a category",
           "fields": [
             {
-              "id": "btnAppearance",
-              "type": "button",
-              "label": "Appearance and Themes",
-              "buttonText": "Change Desktop Theme or Screen Saver",
-              "action": "openDisplay"
-            },
-            {
-              "id": "btnSecurity",
-              "type": "button",
-              "label": "Security Center",
-              "buttonText": "Configure Firewall & Antivirus Protection",
-              "action": "openSecurityCenter"
-            },
-            {
-              "id": "btnNetwork",
-              "type": "button",
-              "label": "Network and Connections",
-              "buttonText": "Manage Network Adapters & Internet Settings",
-              "action": "openNetwork"
-            },
-            {
-              "id": "btnPrograms",
-              "type": "button",
-              "label": "Add or Remove Programs",
-              "buttonText": "Install or Uninstall System Applications",
-              "action": "openAddRemove"
-            },
-            {
-              "id": "btnSystem",
-              "type": "button",
-              "label": "Performance & Maintenance",
-              "buttonText": "View System Specs & Hardware Configuration",
-              "action": "openSystem"
+              "id": "categoryCards",
+              "type": "cards",
+              "cards": [
+                {
+                  "id": "appearance",
+                  "title": "Appearance and Themes",
+                  "icon": "https://img.icons8.com/color/48/000000/monitor.png",
+                  "description": "Change the desktop background, choose a screen saver, or customize the taskbar.",
+                  "action": "openDisplay",
+                  "subtasks": [
+                    { "label": "Change the desktop background", "action": "openDisplay" },
+                    { "label": "Choose a screen saver", "action": "openDisplay" }
+                  ]
+                },
+                {
+                  "id": "security",
+                  "title": "Security Center",
+                  "icon": "https://img.icons8.com/color/48/000000/security-checked.png",
+                  "description": "Configure and monitor Firewall, Automatic Updates, and Antivirus protection.",
+                  "action": "openSecurityCenter",
+                  "subtasks": [
+                    { "label": "Check security status", "action": "openSecurityCenter" }
+                  ]
+                },
+                {
+                  "id": "network",
+                  "title": "Network and Internet Connections",
+                  "icon": "https://img.icons8.com/color/48/000000/network.png",
+                  "description": "Connect to the Internet, configure LAN and TCP/IP settings, or manage adapters.",
+                  "action": "openNetwork",
+                  "subtasks": [
+                    { "label": "View Network Connections", "action": "openNetwork" }
+                  ]
+                },
+                {
+                  "id": "programs",
+                  "title": "Add or Remove Programs",
+                  "icon": "https://img.icons8.com/color/48/000000/add-folder.png",
+                  "description": "Install, modify, or remove software applications and system components.",
+                  "action": "openAddRemove",
+                  "subtasks": [
+                    { "label": "Change or Remove Programs", "action": "openAddRemove" }
+                  ]
+                },
+                {
+                  "id": "users",
+                  "title": "User Accounts",
+                  "icon": "https://img.icons8.com/color/48/000000/user-group-man-man.png",
+                  "description": "Change user account settings, passwords, and access privileges for individuals.",
+                  "action": "openUserMgr",
+                  "subtasks": [
+                    { "label": "Manage user accounts", "action": "openUserMgr" }
+                  ]
+                },
+                {
+                  "id": "system",
+                  "title": "Performance and Maintenance",
+                  "icon": "https://img.icons8.com/color/48/000000/system-information.png",
+                  "description": "View hardware information, performance options, environment variables, and system tools.",
+                  "action": "openSystem",
+                  "subtasks": [
+                    { "label": "View information about this computer", "action": "openSystem" }
+                  ]
+                },
+                {
+                  "id": "timedate",
+                  "title": "Date, Time, and Regional Options",
+                  "icon": "https://img.icons8.com/color/48/000000/clock.png",
+                  "description": "Change the date, time, and time zone for your computer.",
+                  "action": "openTimeDate",
+                  "subtasks": [
+                    { "label": "Change the date and time", "action": "openTimeDate" }
+                  ]
+                },
+                {
+                  "id": "admin",
+                  "title": "Administrative Tools",
+                  "icon": "https://img.icons8.com/color/48/000000/administrative-tools.png",
+                  "description": "Configure administrative tools, registry editor, task manager, and local policies.",
+                  "action": "openAdmin",
+                  "subtasks": [
+                    { "label": "Open Registry Editor", "action": "openRegedit" },
+                    { "label": "Open Command Prompt", "action": "openCmd" }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -92,81 +171,171 @@
       "title": "Classic View",
       "sections": [
         {
-          "type": "group",
           "title": "All Control Panel Applets",
           "fields": [
             {
-              "id": "btnRegedit",
-              "type": "button",
-              "label": "System Registry Editor",
-              "buttonText": "Launch Registry Editor (RegEdit)",
-              "action": "openRegedit"
+              "id": "searchApplets",
+              "type": "search",
+              "placeholder": "Type to filter applets...",
+              "filterTarget": "classicAppletsGrid"
             },
             {
-              "id": "btnTaskMgr",
-              "type": "button",
-              "label": "Task Manager",
-              "buttonText": "View Processes & System Performance",
-              "action": "openTaskMgr"
-            },
-            {
-              "id": "btnCmd",
-              "type": "button",
-              "label": "Command Prompt",
-              "buttonText": "Launch Command Line Interpreter (cmd.exe)",
-              "action": "openCmd"
-            },
-            {
-              "id": "btnNotepad",
-              "type": "button",
-              "label": "Text Editor",
-              "buttonText": "Launch Notepad",
-              "action": "openNotepad"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "tabHealth",
-      "title": "System Health & Diagnostics",
-      "sections": [
-        {
-          "type": "group",
-          "title": "System Status Overview",
-          "fields": [
-            {
-              "id": "sysSummary",
-              "type": "summary",
-              "items": [
-                { "label": "Operating System", "bind": "${$OS}" },
-                { "label": "Registered User", "bind": "${$USER}" },
-                { "label": "System Clock", "bind": "${$DATE} ${$TIME}" },
-                { "label": "Windows Firewall", "bind": "${firewallStatus}" },
-                { "label": "Antivirus Protection", "bind": "${avStatus}" },
-                { "label": "Automatic Updates", "bind": "${updatesStatus}" },
-                { "label": "UI Engine", "bind": "${clearbatchStatus}" }
+              "id": "classicAppletsGrid",
+              "type": "cards",
+              "cards": [
+                {
+                  "id": "classicDisplay",
+                  "title": "Display",
+                  "icon": "https://img.icons8.com/color/48/000000/monitor.png",
+                  "description": "Change desktop theme, screen saver, and monitor resolution.",
+                  "action": "openDisplay"
+                },
+                {
+                  "id": "classicSecurity",
+                  "title": "Security Center",
+                  "icon": "https://img.icons8.com/color/48/000000/security-checked.png",
+                  "description": "Configure Firewall, Automatic Updates, and Antivirus protection.",
+                  "action": "openSecurityCenter"
+                },
+                {
+                  "id": "classicNetwork",
+                  "title": "Network Connections",
+                  "icon": "https://img.icons8.com/color/48/000000/network.png",
+                  "description": "Connect to the Internet, configure LAN and TCP/IP settings.",
+                  "action": "openNetwork"
+                },
+                {
+                  "id": "classicPrograms",
+                  "title": "Add or Remove Programs",
+                  "icon": "https://img.icons8.com/color/48/000000/add-folder.png",
+                  "description": "Install, modify, or remove software applications.",
+                  "action": "openAddRemove"
+                },
+                {
+                  "id": "classicUsers",
+                  "title": "User Accounts",
+                  "icon": "https://img.icons8.com/color/48/000000/user-group-man-man.png",
+                  "description": "Change user passwords, profile pictures, and access rights.",
+                  "action": "openUserMgr"
+                },
+                {
+                  "id": "classicSystem",
+                  "title": "System",
+                  "icon": "https://img.icons8.com/color/48/000000/system-information.png",
+                  "description": "View hardware information, performance options, and environment variables.",
+                  "action": "openSystem"
+                },
+                {
+                  "id": "classicRegedit",
+                  "title": "Registry Editor",
+                  "icon": "https://img.icons8.com/color/48/000000/registry-editor.png",
+                  "description": "Inspect and configure registry hives, system keys, and policies.",
+                  "action": "openRegedit"
+                },
+                {
+                  "id": "classicDateTime",
+                  "title": "Date and Time",
+                  "icon": "https://img.icons8.com/color/48/000000/clock.png",
+                  "description": "Set the system clock, calendar, and daylight saving time.",
+                  "action": "openTimeDate"
+                },
+                {
+                  "id": "classicCmd",
+                  "title": "Command Prompt",
+                  "icon": "https://img.icons8.com/color/48/000000/console.png",
+                  "description": "Open text-based administrative console and script executor.",
+                  "action": "openCmd"
+                },
+                {
+                  "id": "classicNotepad",
+                  "title": "Notepad",
+                  "icon": "https://img.icons8.com/color/48/000000/notepad.png",
+                  "description": "Create and edit plain text configuration files.",
+                  "action": "openNotepad"
+                },
+                {
+                  "id": "classicAdmin",
+                  "title": "Administrative Tools",
+                  "icon": "https://img.icons8.com/color/48/000000/administrative-tools.png",
+                  "description": "Configure computer management, local security policies, and audit logs.",
+                  "action": "openAdmin"
+                }
               ]
             }
           ]
         }
-      ],
-      "actions": [
-        { "id": "btnAudit", "text": "Run Security Audit", "isDefault": true, "action": "runAudit" },
-        { "id": "btnClean", "text": "Quick Maintenance", "action": "runMaintenance" }
       ]
-    },
-    {
-      "id": "tabHardware",
-      "title": "Hardware & Devices (Inactive)",
-      "disabled": true,
-      "sections": []
     }
   ],
+  "actions": {
+    "openDisplay": [
+      { "task": "exec", "app": "display" }
+    ],
+    "openSecurityCenter": [
+      { "task": "exec", "app": "wscui" }
+    ],
+    "openNetwork": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Local Area Connection Status",
+        "message": "Samsoft FXP OS Network Adapter\nStatus: Connected\nSpeed: 1.0 Gbps\nIP Address: 192.168.1.150\nSubnet: 255.255.255.0\nGateway: 192.168.1.1"
+      }
+    ],
+    "openAddRemove": [
+      { "task": "exec", "app": "appwiz" }
+    ],
+    "openUserMgr": [
+      { "task": "exec", "app": "nusrmgr" }
+    ],
+    "openSystem": [
+      { "task": "exec", "app": "sysdm" }
+    ],
+    "openRegedit": [
+      { "task": "exec", "app": "regedit" }
+    ],
+    "openTimeDate": [
+      { "task": "exec", "app": "timedate" }
+    ],
+    "openCmd": [
+      { "task": "exec", "app": "cmd" }
+    ],
+    "openNotepad": [
+      { "task": "exec", "app": "notepad" }
+    ],
+    "openAdmin": [
+      { "task": "exec", "app": "adminManager" }
+    ],
+    "showClassic": [
+      { "task": "set", "key": "currentAddress", "value": "Control Panel\\Classic View" },
+      { "task": "notify", "title": "Control Panel", "message": "Switched to Classic View" }
+    ],
+    "showCategories": [
+      { "task": "set", "key": "currentAddress", "value": "Control Panel" },
+      { "task": "notify", "title": "Control Panel", "message": "Switched to Category View" }
+    ],
+    "showHelp": [
+      {
+        "task": "dialog",
+        "dialogType": "info",
+        "title": "Control Panel Help",
+        "message": "Control Panel is the central location to configure system hardware, security policies, user privileges, and appearance settings in Samsoft FXP OS."
+      }
+    ],
+    "showAbout": [
+      {
+        "task": "dialog",
+        "dialogType": "about",
+        "title": "About Control Panel",
+        "message": "Samsoft FXP OS Control Panel\nPowered by ClearBatch Declarative Engine v2.2 with ExtraX Shell Integration.\n(C) 2001-2026 Samsoft Corporation."
+      }
+    ]
+  },
   "statusBar": {
     "panels": [
       { "bind": "${statusMessage}", "flexGrow": true },
-      { "text": "Control Panel (ClearBatch)", "width": "14rem" }
+      { "text": "ClearBatch v2.2", "width": "9rem" },
+      { "bind": "Address: ${currentAddress}", "width": "16rem" }
     ]
   }
 }

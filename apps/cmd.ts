@@ -166,23 +166,33 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             }
         } else if (cmd === 'echo') {
             lines.push(cmdArgs.join(' '));
+        } else if (cmd === 'whoami') {
+            const user = XP_API.Auth.getCurrentUser();
+            const isElevated = XP_API.Session ? XP_API.Session.isElevated() : false;
+            lines.push(`User: ${user ? user.username : 'Unknown'} [Privilege: ${user ? user.privilege : 'none'}]${isElevated ? ' (Elevated)' : ''}`);
         } else if (cmd === 'mkdir' || cmd === 'md') {
             if (cmdArgs.length === 0) {
                 lines.push('The syntax of the command is incorrect.');
             } else {
                 const target = resolvePath(cmdArgs[0]);
-                if (VFS.mkdir(target)) {
+                const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:write', target) : { allowed: true };
+                if (!check.allowed) {
+                    lines.push(`Access is denied: ${check.reason || 'Insufficient privilege to create directory.'}`);
+                } else if (VFS.mkdir(target)) {
                     lines.push(`Directory created: ${target}`);
                 } else {
                     lines.push(`A subdirectory or file ${cmdArgs[0]} already exists.`);
                 }
             }
-        } else if (cmd === 'del' || cmd === 'erase' || cmd === 'rm') {
+        } else if (cmd === 'del' || cmd === 'erase' || cmd === 'rm' || cmd === 'rd' || cmd === 'rmdir') {
             if (cmdArgs.length === 0) {
                 lines.push('The syntax of the command is incorrect.');
             } else {
                 const target = resolvePath(cmdArgs[0]);
-                if (VFS.delete(target)) {
+                const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:delete', target) : { allowed: true };
+                if (!check.allowed) {
+                    lines.push(`Access is denied: ${check.reason || 'Insufficient privilege to delete.'}`);
+                } else if (VFS.delete(target)) {
                     lines.push(`Deleted: ${target}`);
                 } else {
                     lines.push(`Could Not Find ${cmdArgs[0]}`);

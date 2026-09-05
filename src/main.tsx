@@ -1,5 +1,8 @@
 import { Kernel } from './kernel';
-import { IKernel, IFCCF, IVirtualFileSystem, User } from './types';
+import { IKernel, IFCCF, IVirtualFileSystem, User, MenuItem } from './types';
+import desktopConfig from './data/desktopConfig.json';
+import { BootSystem } from './bootSystem';
+import { interpolateString } from './clearbatch_engine';
 
 declare global {
     interface Window {
@@ -9,6 +12,9 @@ declare global {
         applyTheme: (themeName: string) => void;
         restartExplorer: () => void;
         renderDesktop: () => void;
+        showLogonScreen: () => void;
+        showShutdownScreen: () => void;
+        startBootSequence: () => void;
     }
 }
 
@@ -20,24 +26,13 @@ window.XP_API = kernel;
 window.FCCF = kernel.FCCF;
 window.VFS = kernel.VFS;
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Run system boot provisioner
-    systemBoot();
-});
+let hasBooted = false;
 
-// For Vite or fallback, run immediately if DOM is already loaded
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    systemBoot();
-}
-
-function systemBoot() {
+function provisionSecurityDefaults() {
     const users = kernel.Registry.get('Security/Users');
     if (!users) return;
     
-    const defaults: { [key: string]: string } = {
-        'Administrator': '12345678',
-        'User': '1234'
-    };
+    const defaults = desktopConfig.defaultCredentials as Record<string, string>;
     let changed = false;
     for (const u in defaults) {
         if (users[u]) {
@@ -52,13 +47,37 @@ function systemBoot() {
         kernel.Registry.set('Security/Users', users);
         console.log('System Security Provisioned');
     }
+}
 
-    const currentUser = kernel.Auth.getCurrentUser();
-    if (!currentUser) {
-        showLogonScreen();
-    } else {
-        initDesktop();
-    }
+function startBootSequence() {
+    provisionSecurityDefaults();
+    const bootSystem = new BootSystem(kernel);
+    bootSystem.startBoot(() => {
+        const currentUser = kernel.Auth.getCurrentUser();
+        if (!currentUser) {
+            showLogonScreen();
+        } else {
+            initDesktop();
+        }
+    });
+}
+
+function systemBoot() {
+    if (hasBooted) return;
+    hasBooted = true;
+    startBootSequence();
+}
+
+window.startBootSequence = startBootSequence;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Run system boot provisioner
+    systemBoot();
+});
+
+// For Vite or fallback, run immediately if DOM is already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    systemBoot();
 }
 
 function showShutdownScreen() {
@@ -83,21 +102,28 @@ function showShutdownScreen() {
             fontFamily: 'Tahoma, sans-serif'
         });
         shutEl.innerHTML = `
-            <div style="font-size:1.5rem;color:#ff9900;font-weight:bold;">Samsoft FXP OS 2.1</div>
-            <div style="font-size:1.125rem;">It is now safe to turn off your computer.</div>
-            <button id="btn-restart-pc" class="xp-button" style="padding:0.375rem 1.25rem;cursor:pointer;background:#ece9d8;color:#000;">Turn On / Restart</button>
+            <div style="font-size:1.5rem;color:#ff9900;font-weight:bold;">${desktopConfig.power.shutdownHeading}</div>
+            <div style="font-size:1.125rem;">${desktopConfig.power.shutdownMessage}</div>
+            <button id="btn-restart-pc" class="xp-button" style="padding:0.375rem 1.25rem;cursor:pointer;background:#ece9d8;color:#000;">${desktopConfig.power.restartButton}</button>
         `;
         document.body.appendChild(shutEl);
         shutEl.querySelector<HTMLButtonElement>('#btn-restart-pc')!.onclick = () => {
             shutEl?.remove();
-            showLogonScreen();
+            startBootSequence();
         };
     }
 }
 
 function showLogonScreen() {
-    const desktop = document.getElementById('desktop');
-    if (!desktop) return;
+    kernel.WindowManager.unmountShell();
+
+    const baseLayer = document.getElementById('base-layer') || document.body;
+    baseLayer.style.display = 'block';
+
+    const userLayer = document.getElementById('user-layer');
+    if (userLayer) {
+        userLayer.style.display = 'none';
+    }
 
     // Check if logon screen already exists
     const existingLogon = document.getElementById('logon-screen');
@@ -134,9 +160,9 @@ function showLogonScreen() {
 
     const left = document.createElement('div');
     left.style.textAlign = 'right';
-    left.innerHTML = '<div style="font-size:36px;color:white;font-weight:bold;font-family:Tahoma;">Samsoft <span style="color:#ff9900;">FXP OS</span></div>' +
-                     '<div style="color:#d0d0d0;font-size:14px;font-family:Tahoma;margin-bottom:8px;">Version 2.1 Professional</div>' +
-                     '<div style="color:white;font-size:14px;opacity:0.8;font-family:Tahoma;">To begin, click your user name</div>';
+    left.innerHTML = `<div style="font-size:36px;color:white;font-weight:bold;font-family:Tahoma;">${desktopConfig.system.brandPrefix} <span style="color:#ff9900;">${desktopConfig.system.brandHighlight}</span></div>` +
+                     `<div style="color:#d0d0d0;font-size:14px;font-family:Tahoma;margin-bottom:8px;">${desktopConfig.system.edition}</div>` +
+                     `<div style="color:white;font-size:14px;opacity:0.8;font-family:Tahoma;">${desktopConfig.system.logonPrompt}</div>`;
     middle.appendChild(left);
 
     const right = document.createElement('div');
@@ -206,7 +232,7 @@ function showLogonScreen() {
         });
         
         const pwdLabel = document.createElement('div');
-        pwdLabel.innerText = 'Type your password:';
+        pwdLabel.innerText = desktopConfig.system.passwordPrompt;
         Object.assign(pwdLabel.style, {
             color: 'white',
             fontSize: '12px'
@@ -254,7 +280,7 @@ function showLogonScreen() {
             fontSize: '11px',
             display: 'none'
         });
-        errorMsg.innerText = 'Incorrect password. Please try again.';
+        errorMsg.innerText = desktopConfig.system.passwordError;
         pwdArea.appendChild(errorMsg);
 
         userContainer.appendChild(pwdArea);
@@ -313,7 +339,7 @@ function showLogonScreen() {
         alignItems: 'center',
         gap: '10px'
     });
-    turnOffBtn.innerHTML = '<img src="https://img.icons8.com/color/48/000000/shutdown.png" style="width:24px;height:24px;" referrerPolicy="no-referrer"><span>Turn off computer</span>';
+    turnOffBtn.innerHTML = `<img src="https://img.icons8.com/color/48/000000/shutdown.png" style="width:24px;height:24px;" referrerPolicy="no-referrer"><span>${desktopConfig.power.turnOffButton}</span>`;
     
     turnOffBtn.onclick = () => {
         const overlay = document.createElement('div');
@@ -339,10 +365,10 @@ function showLogonScreen() {
             color: 'white',
             textAlign: 'center'
         });
-        shutDownBox.innerHTML = '<div style="font-size:18px;margin-bottom:20px;font-weight:bold;">Turn off computer?</div>' +
+        shutDownBox.innerHTML = `<div style="font-size:18px;margin-bottom:20px;font-weight:bold;">${desktopConfig.power.turnOffConfirmTitle}</div>` +
                                 '<div style="display:flex;gap:20px;justify-content:center;">' +
-                                    '<button id="btn-cancel" style="padding:5px 15px; cursor:pointer;" class="xp-button">Cancel</button>' +
-                                    '<button id="btn-off" style="padding:5px 15px;background:#cc0000;color:white;border:1px solid #fff; cursor:pointer;" class="xp-button">Turn Off</button>' +
+                                    `<button id="btn-cancel" style="padding:5px 15px; cursor:pointer;" class="xp-button">${desktopConfig.power.cancelButton}</button>` +
+                                    `<button id="btn-off" style="padding:5px 15px;background:#cc0000;color:white;border:1px solid #fff; cursor:pointer;" class="xp-button">${desktopConfig.power.turnOffAction}</button>` +
                                 '</div>';
         overlay.appendChild(shutDownBox);
         document.body.appendChild(overlay);
@@ -356,7 +382,7 @@ function showLogonScreen() {
 
     bottom.appendChild(turnOffBtn);
     logon.appendChild(bottom);
-    document.body.appendChild(logon);
+    baseLayer.appendChild(logon);
 }
 
 // Expose showLogonScreen to window for kernel Auth.logout
@@ -368,6 +394,9 @@ function initDesktop() {
         showLogonScreen();
         return;
     }
+
+    // Mount shell (desktop, taskbar, start menu) dynamically into user-layer
+    kernel.WindowManager.mountShell();
 
     // Load SCT Settings
     const sct = kernel.getSCT();
@@ -382,11 +411,7 @@ function initDesktop() {
     }
 
     window.applyTheme = (themeName: string) => {
-        const themes: { [key: string]: { primary: string; light: string; dark: string; inactive: string } } = {
-            'Luna': { primary: '#0054e3', light: '#0058e6', dark: '#00309c', inactive: '#9db9eb' },
-            'Olive': { primary: '#738a5d', light: '#8ea375', dark: '#5a6b48', inactive: '#c5d0b9' },
-            'Silver': { primary: '#a0a0a0', light: '#b0b0b0', dark: '#808080', inactive: '#d0d0d0' }
-        };
+        const themes = desktopConfig.themes as Record<string, { primary: string; light: string; dark: string; inactive: string }>;
         const t = themes[themeName] || themes['Luna'];
         document.documentElement.style.setProperty('--xp-blue', t.primary);
         document.documentElement.style.setProperty('--xp-blue-light', t.light);
@@ -417,7 +442,7 @@ function initDesktop() {
         updateClock();
         window.renderDesktop();
         kernel.updateTaskbar();
-        kernel.showDialog({ title: 'System', message: 'Explorer has been restarted.' });
+        kernel.showDialog({ title: 'System', message: desktopConfig.power.restartExplorerNotice });
     };
 
     // Clock update
@@ -440,7 +465,7 @@ function initDesktop() {
         const minutesStr = minutes < 10 ? '0' + minutes : String(minutes);
         clockEl.innerText = hours + ':' + minutesStr + ' ' + ampm;
     }
-    setInterval(updateClock, 1000);
+    setInterval(updateClock, desktopConfig.clock.intervalMs);
     updateClock();
 
     // Disable default context menu globally (retaining text selections on input/textareas)
@@ -480,33 +505,41 @@ function initDesktop() {
     if (desktop) {
         desktop.oncontextmenu = (e) => {
             e.preventDefault();
-            kernel.showContextMenu(e.clientX, e.clientY, [
-                { text: 'Arrange Icons By', menu: [
-                    { text: 'Name' },
-                    { text: 'Size' },
-                    { text: 'Type' },
-                    { text: 'Modified' }
-                ]},
-                { text: 'Refresh', action: () => { window.renderDesktop(); } },
-                { separator: true },
-                { text: 'Paste', action: () => { kernel.showDialog({ message: 'Nothing to paste.' }); } },
-                { text: 'Paste Shortcut' },
-                { separator: true },
-                { text: 'New', menu: [
-                    { text: 'Folder', action: () => { kernel.VFS.mkdir('C:/Desktop/New Folder'); window.renderDesktop(); } },
-                    { text: 'Shortcut' },
-                    { text: 'Text Document', action: () => { kernel.VFS.writeFile('C:/Desktop/New Text Document.txt', ''); window.renderDesktop(); } }
-                ]},
-                { separator: true },
-                { text: 'Properties', action: () => { kernel.exec('displayProperties'); } }
-            ]);
+            const buildMenu = (items: typeof desktopConfig.contextMenu.desktop): MenuItem[] => {
+                return items.map(item => {
+                    const menuItem: MenuItem = {
+                        text: item.text,
+                        separator: item.separator
+                    };
+                    if ('actionId' in item && item.actionId) {
+                        if (item.actionId === 'refreshDesktop') {
+                            menuItem.action = () => { window.renderDesktop(); };
+                        } else if (item.actionId === 'pasteClipboard') {
+                            menuItem.action = () => { kernel.showDialog({ message: desktopConfig.contextMenu.strings.nothingToPaste }); };
+                        } else if (item.actionId === 'newFolder') {
+                            menuItem.action = () => { kernel.VFS.mkdir(desktopConfig.contextMenu.strings.defaultFolderName); window.renderDesktop(); };
+                        } else if (item.actionId === 'newTextDocument') {
+                            menuItem.action = () => { kernel.VFS.writeFile(desktopConfig.contextMenu.strings.defaultDocName, ''); window.renderDesktop(); };
+                        } else if (item.actionId === 'openDisplayProperties') {
+                            menuItem.action = () => { kernel.exec('displayProperties'); };
+                        }
+                    }
+                    if ('menu' in item && Array.isArray(item.menu)) {
+                        menuItem.menu = buildMenu(item.menu as unknown as typeof desktopConfig.contextMenu.desktop);
+                    }
+                    return menuItem;
+                });
+            };
+
+            kernel.showContextMenu(e.clientX, e.clientY, buildMenu(desktopConfig.contextMenu.desktop));
         };
     }
 
     // Antivirus Tray Icon
+    const avConfig = desktopConfig.tray.antivirus;
     const avIcon = kernel.addTrayIcon({
-        title: 'CentralFirm Antivirus',
-        icon: 'https://img.icons8.com/color/48/000000/shield.png',
+        title: avConfig.title,
+        icon: avConfig.icon,
         onclick: () => {
             kernel.exec('antivirus');
         }
@@ -514,10 +547,10 @@ function initDesktop() {
 
     setTimeout(() => {
         avIcon.showBalloon({
-            title: 'CentralFirm Antivirus',
-            message: 'Your computer is protected. No threats found.'
+            title: avConfig.balloonTitle,
+            message: avConfig.balloonMessage
         });
-    }, 2000);
+    }, avConfig.balloonDelayMs);
 
     // Start Menu Header
     const startHeader = document.getElementById('start-header');
@@ -550,14 +583,7 @@ function initDesktop() {
     const startRight = document.getElementById('start-right');
     if (startRight && startMenu) {
         startRight.innerHTML = '';
-        const rightItems = [
-            { name: 'My Documents', action: () => { kernel.exec('explorer', ['C:/Documents']); } },
-            { name: 'My Pictures', action: () => { kernel.showDialog({ message: 'My Pictures is empty.' }); } },
-            { name: 'My Music', action: () => { kernel.showDialog({ message: 'My Music is empty.' }); } },
-            { separator: true },
-            { name: 'My Computer', action: () => { kernel.exec('explorer', ['C:']); } },
-            { name: 'Control Panel', action: () => { kernel.exec('control'); } }
-        ];
+        const rightItems = desktopConfig.startMenu.rightItems;
 
         rightItems.forEach(item => {
             if (item.separator) {
@@ -568,22 +594,29 @@ function initDesktop() {
                 className: 'start-item',
                 innerText: item.name,
                 onclick: () => {
-                    if (item.action) item.action();
+                    if (item.actionType === 'explorer' && item.target) {
+                        kernel.exec('explorer', [item.target]);
+                    } else if (item.actionType === 'dialog' && item.message) {
+                        kernel.showDialog({ message: item.message });
+                    } else if (item.actionType === 'app' && item.target) {
+                        kernel.exec(item.target);
+                    }
                     startMenu.classList.remove('open');
                 }
             });
             startRight.appendChild(div);
         });
 
+        const runConfig = desktopConfig.startMenu.run;
         const runItem = kernel.createElement({
             className: 'start-item',
-            innerHTML: '<img src="https://img.icons8.com/color/48/000000/run-command.png" style="width:24px;height:24px;" referrerPolicy="no-referrer"><span>Run...</span>',
+            innerHTML: `<img src="${runConfig.icon}" style="width:24px;height:24px;" referrerPolicy="no-referrer"><span>${runConfig.label}</span>`,
             onclick: () => {
                 startMenu.classList.remove('open');
                 kernel.showDialog({
                     type: 'prompt',
-                    title: 'Run',
-                    message: 'Type the name of a program, folder, document, or Internet resource, and Windows will open it for you.',
+                    title: runConfig.dialogTitle,
+                    message: runConfig.dialogMessage,
                     onOk: (cmd) => {
                         if (typeof cmd === 'string' && cmd.length > 0) {
                             if (cmd.startsWith('C:/')) {

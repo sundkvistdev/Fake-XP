@@ -50,22 +50,55 @@
     "Users": {
       "Administrator": {
         "username": "Administrator",
+        "displayName": "Administrator",
         "passwordHash": "910de084",
         "privilege": "admin",
-        "avatar": "https://img.icons8.com/color/48/000000/administrator-male.png"
+        "avatar": "https://img.icons8.com/color/48/000000/administrator-male.png",
+        "description": "Built-in account for administering the computer/domain"
+      },
+      "Sam": {
+        "username": "Sam",
+        "displayName": "Sam",
+        "passwordHash": "",
+        "privilege": "admin",
+        "avatar": "https://img.icons8.com/color/48/000000/astronaut.png",
+        "description": "Primary Administrator Account"
       },
       "User": {
         "username": "User",
+        "displayName": "Standard User",
         "passwordHash": "170842",
         "privilege": "user",
-        "avatar": "https://img.icons8.com/color/48/000000/user.png"
+        "avatar": "https://img.icons8.com/color/48/000000/user.png",
+        "description": "Standard User account"
       },
       "Guest": {
         "username": "Guest",
+        "displayName": "Guest",
         "passwordHash": "",
         "privilege": "guest",
-        "avatar": "https://img.icons8.com/color/48/000000/guest-male.png"
+        "avatar": "https://img.icons8.com/color/48/000000/guest-male.png",
+        "description": "Restricted guest access"
       }
+    },
+    "Session": {
+      "ElevationTimeoutMs": 900000,
+      "GuestUsername": "Guest",
+      "AdminUsernames": ["Administrator", "Sam"],
+      "GuestRestrictedActions": [
+        "file:write",
+        "file:delete",
+        "registry:write",
+        "registry:delete",
+        "app:exec",
+        "system:admin"
+      ],
+      "RestrictedApps": [
+        "regedit",
+        "secpol",
+        "adminManager",
+        "userAccounts"
+      ]
     },
     "UACEnabled": true,
     "CurrentSession": null

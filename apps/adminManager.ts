@@ -1,5 +1,5 @@
 import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
-import { ExtraX, ExtraXCategoryCard, ExtraXViewMode } from '../src/extrax';
+import { ExtraX, ExtraXViewMode, ExtraXOrderedItem, ExtraXOrderedCategory } from '../src/extrax';
 import adminData from '../src/data/adminManager.json';
 import systemInfo from '../src/data/systemInfo.json';
 
@@ -81,162 +81,116 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         }
     });
 
-    // Content renderer
+    // Content renderer using ExtraX Ordered Data Manager (High-Contrast, Black on White)
     const renderContent = () => {
         shell.contentArea.innerHTML = '';
 
         if (currentCategory === 'categories') {
             shell.setAddress('Administrative Tools');
-            const catCards: ExtraXCategoryCard[] = adminData.categories.map(c => ({
+            const orderedCategories: ExtraXOrderedCategory[] = adminData.categories.map(c => ({
+                id: c.id,
+                title: c.name,
+                icon: c.icon,
+                description: c.desc
+            }));
+            const orderedItems: ExtraXOrderedItem[] = adminData.categories.map(c => ({
                 id: c.id,
                 title: c.name,
                 icon: c.icon,
                 description: c.desc,
+                category: 'Administrative Tool',
                 action: () => switchView(c.id)
             }));
-            const catView = ExtraX.createCategoriesView(catCards);
-            shell.contentArea.appendChild(catView);
+            const manager = ExtraX.createOrderedDataManager({
+                title: 'Pick a category',
+                items: orderedItems,
+                categories: orderedCategories,
+                viewMode: 'categories',
+                onCategoryAction: (cat) => switchView(cat.id),
+                onItemAction: (item) => switchView(item.id)
+            });
+            shell.contentArea.appendChild(manager);
             return;
         }
 
         if (currentCategory === 'services') {
             shell.setAddress('Administrative Tools \\ Services');
-            const header = document.createElement('div');
-            header.className = 'extrax-header-title';
-            header.innerHTML = '<span>System Services</span><span style="font-size:0.75rem;color:#555;font-weight:normal;margin-left:auto;">Real-time service controller</span>';
-            shell.contentArea.appendChild(header);
-
-            const table = document.createElement('table');
-            table.className = 'xp-listview';
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Name</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Status</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Startup Type</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Description</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector('tbody')!;
-
-            adminData.services.forEach(svc => {
-                const tr = document.createElement('tr');
-                tr.style.cursor = 'pointer';
-                tr.innerHTML = `
-                    <td style="padding:0.375rem;font-weight:bold;display:flex;align-items:center;gap:0.375rem;">
-                        <img src="https://img.icons8.com/color/16/000000/service.png" />
-                        <span>${svc.name}</span>
-                    </td>
-                    <td style="padding:0.375rem;color:#008000;font-weight:bold;">${svc.status}</td>
-                    <td style="padding:0.375rem;">${svc.startup}</td>
-                    <td style="padding:0.375rem;color:#555;">${svc.description}</td>
-                `;
-                tr.onclick = () => {
-                    tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
-                    tr.classList.add('selected');
-                };
-                tbody.appendChild(tr);
+            const serviceItems: ExtraXOrderedItem[] = adminData.services.map(svc => ({
+                id: svc.name,
+                title: svc.name,
+                description: svc.description,
+                badge: svc.status,
+                category: `Startup: ${svc.startup}`,
+                icon: 'https://img.icons8.com/color/16/000000/service.png',
+                action: () => {
+                    XP_API.showDialog({
+                        type: 'info',
+                        title: 'Service Details',
+                        message: `Service Name: ${svc.name}\nCurrent Status: ${svc.status}\nStartup Type: ${svc.startup}\n\nDescription:\n${svc.description}`
+                    });
+                }
+            }));
+            const manager = ExtraX.createOrderedDataManager({
+                title: 'System Services',
+                items: serviceItems,
+                viewMode: 'details',
+                searchPlaceholder: 'Search services...'
             });
-
-            shell.contentArea.appendChild(table);
-
-            const btnBar = document.createElement('div');
-            btnBar.style.display = 'flex';
-            btnBar.style.gap = '0.5rem';
-            btnBar.style.marginTop = '1rem';
-
-            const restartBtn = document.createElement('button');
-            restartBtn.className = 'xp-button';
-            restartBtn.innerText = 'Restart Service';
-            restartBtn.onclick = () => {
-                XP_API.showDialog({
-                    type: 'info',
-                    title: 'Service Control',
-                    message: 'The selected service was successfully restarted and verified by Access Control Layer.'
-                });
-            };
-            btnBar.appendChild(restartBtn);
-            shell.contentArea.appendChild(btnBar);
+            shell.contentArea.appendChild(manager);
             return;
         }
 
         if (currentCategory === 'policies') {
             shell.setAddress('Administrative Tools \\ Local Security Policies');
-            const header = document.createElement('div');
-            header.className = 'extrax-header-title';
-            header.innerHTML = '<span>Local Security Policies & RBAC</span>';
-            shell.contentArea.appendChild(header);
-
-            const table = document.createElement('table');
-            table.className = 'xp-listview';
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Policy</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Security Setting</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Description</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector('tbody')!;
-
-            adminData.policies.forEach(p => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding:0.375rem;font-weight:bold;">${p.policy}</td>
-                    <td style="padding:0.375rem;color:#003399;font-weight:bold;">${p.setting}</td>
-                    <td style="padding:0.375rem;color:#555;">${p.desc}</td>
-                `;
-                tbody.appendChild(tr);
+            const policyItems: ExtraXOrderedItem[] = adminData.policies.map(p => ({
+                id: p.policy,
+                title: p.policy,
+                description: p.desc,
+                badge: p.setting,
+                category: 'Security Setting',
+                icon: 'https://img.icons8.com/color/16/000000/security-configuration.png',
+                action: () => {
+                    XP_API.showDialog({
+                        type: 'info',
+                        title: 'Security Policy',
+                        message: `Policy: ${p.policy}\nConfigured Setting: ${p.setting}\n\n${p.desc}`
+                    });
+                }
+            }));
+            const manager = ExtraX.createOrderedDataManager({
+                title: 'Local Security Policies & RBAC',
+                items: policyItems,
+                viewMode: 'details',
+                searchPlaceholder: 'Filter security policies...'
             });
-            shell.contentArea.appendChild(table);
+            shell.contentArea.appendChild(manager);
             return;
         }
 
         if (currentCategory === 'audit') {
             shell.setAddress('Administrative Tools \\ Event Viewer');
-            const header = document.createElement('div');
-            header.className = 'extrax-header-title';
-            header.innerHTML = '<span>System & Security Event Logs</span>';
-            shell.contentArea.appendChild(header);
-
-            const table = document.createElement('table');
-            table.className = 'xp-listview';
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Type</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Time</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Source</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Event ID</th>
-                        <th style="text-align:left;padding:0.375rem;background:#ece9d8;border:1px solid #aca899;">Description</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector('tbody')!;
-
-            adminData.auditEvents.forEach(evt => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="padding:0.375rem;color:#003399;">${evt.level}</td>
-                    <td style="padding:0.375rem;">${evt.time}</td>
-                    <td style="padding:0.375rem;font-weight:bold;">${evt.source}</td>
-                    <td style="padding:0.375rem;">${evt.id}</td>
-                    <td style="padding:0.375rem;color:#444;">${evt.desc}</td>
-                `;
-                tbody.appendChild(tr);
+            const auditItems: ExtraXOrderedItem[] = adminData.auditEvents.map(evt => ({
+                id: String(evt.id),
+                title: `${evt.source} (Event ${evt.id})`,
+                description: evt.desc,
+                badge: evt.level,
+                category: evt.time,
+                icon: 'https://img.icons8.com/color/16/000000/event-log.png',
+                action: () => {
+                    XP_API.showDialog({
+                        type: 'info',
+                        title: `Event Log #${evt.id}`,
+                        message: `Source: ${evt.source}\nLevel: ${evt.level}\nTime: ${evt.time}\nEvent ID: ${evt.id}\n\nDescription:\n${evt.desc}`
+                    });
+                }
+            }));
+            const manager = ExtraX.createOrderedDataManager({
+                title: 'System & Security Event Logs',
+                items: auditItems,
+                viewMode: 'details',
+                searchPlaceholder: 'Filter event logs...'
             });
-            shell.contentArea.appendChild(table);
+            shell.contentArea.appendChild(manager);
             return;
         }
 
@@ -250,19 +204,19 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             const cur = XP_API.Auth.getCurrentUser();
             const box = document.createElement('div');
             box.style.padding = '1rem';
-            box.style.background = '#f7f7f7';
-            box.style.border = '1px solid #d4d0c8';
-            box.style.borderRadius = '3px';
+            box.style.background = '#ffffff';
+            box.style.border = '1px solid #000000';
+            box.style.color = '#000000';
             box.innerHTML = `
-                <div style="font-weight:bold;font-size:1rem;color:#003399;margin-bottom:0.5rem;">Current Active Session</div>
+                <div style="font-weight:bold;font-size:1rem;color:#000000;margin-bottom:0.5rem;">Current Active Session</div>
                 <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
-                    <img src="${cur?.avatar || ''}" style="width:3rem;height:3rem;border:2px solid #7f9db9;border-radius:3px;" />
+                    <img src="${cur?.avatar || ''}" style="width:3rem;height:3rem;border:1px solid #000000;" />
                     <div>
-                        <div style="font-weight:bold;font-size:1.125rem;">${cur?.username || 'None'}</div>
-                        <div style="color:#555;">Privilege Level: <span style="font-weight:bold;color:#008000;">${cur?.privilege.toUpperCase() || ''}</span></div>
+                        <div style="font-weight:bold;font-size:1.125rem;color:#000000;">${cur?.username || 'None'}</div>
+                        <div style="color:#000000;">Privilege Level: <span style="font-weight:bold;">${cur?.privilege.toUpperCase() || ''}</span></div>
                     </div>
                 </div>
-                <div style="font-size:0.8125rem;color:#444;line-height:1.5;">
+                <div style="font-size:0.8125rem;color:#000000;line-height:1.5;">
                     Security Descriptor: Active Win32 Desktop session bound to kernel memory.<br>
                     State preservation: Session state is kept dynamically in-memory without browser page reloads.
                 </div>
@@ -280,54 +234,28 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
 
         if (currentCategory === 'clearbatch') {
             shell.setAddress('Administrative Tools \\ ClearBatch Automation');
-            const header = document.createElement('div');
-            header.className = 'extrax-header-title';
-            header.innerHTML = '<span>ClearBatch Declarative Automation Tasks</span>';
-            shell.contentArea.appendChild(header);
-
-            const taskGrid = document.createElement('div');
-            taskGrid.style.display = 'flex';
-            taskGrid.style.flexDirection = 'column';
-            taskGrid.style.gap = '0.75rem';
-
-            adminData.batchTasks.forEach(task => {
-                const card = document.createElement('div');
-                card.style.display = 'flex';
-                card.style.alignItems = 'center';
-                card.style.gap = '1rem';
-                card.style.padding = '0.75rem';
-                card.style.border = '1px solid #7f9db9';
-                card.style.background = '#ffffff';
-                card.style.borderRadius = '3px';
-
-                const icon = document.createElement('img');
-                icon.src = 'https://img.icons8.com/color/32/000000/processor.png';
-                card.appendChild(icon);
-
-                const info = document.createElement('div');
-                info.style.flex = '1';
-                info.innerHTML = `
-                    <div style="font-weight:bold;color:#003399;font-size:0.875rem;">${task.title}</div>
-                    <div style="font-size:0.8125rem;color:#555;">${task.desc}</div>
-                `;
-                card.appendChild(info);
-
-                const runBtn = document.createElement('button');
-                runBtn.className = 'xp-button';
-                runBtn.innerText = 'Execute';
-                runBtn.onclick = () => {
+            const taskItems: ExtraXOrderedItem[] = adminData.batchTasks.map(task => ({
+                id: task.id,
+                title: task.title,
+                description: task.desc,
+                badge: 'Ready',
+                category: 'Automation Routine',
+                icon: 'https://img.icons8.com/color/32/000000/processor.png',
+                action: () => {
                     XP_API.showDialog({
                         type: 'info',
                         title: 'ClearBatch Task Executed',
                         message: `Successfully completed declarative task: "${task.title}".\nSystem state synchronized with ${systemInfo.product} ${systemInfo.version}.`
                     });
-                };
-                card.appendChild(runBtn);
-
-                taskGrid.appendChild(card);
+                }
+            }));
+            const manager = ExtraX.createOrderedDataManager({
+                title: 'ClearBatch Declarative Automation Tasks',
+                items: taskItems,
+                viewMode: 'tiles',
+                searchPlaceholder: 'Filter automation tasks...'
             });
-
-            shell.contentArea.appendChild(taskGrid);
+            shell.contentArea.appendChild(manager);
             return;
         }
     };
@@ -428,7 +356,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         minWidth: adminData.window.minWidth,
         minHeight: adminData.window.minHeight,
         icon: adminData.window.icon,
-        layer: 'admin',
+        layer: 'user',
         content: windowContent
     });
 

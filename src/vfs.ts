@@ -5,6 +5,7 @@ import registryInitialData from './data/registryInitialImage.json';
 export class VirtualFileSystem implements IVirtualFileSystem {
     private storage: { 'C:': VFSNode };
     private watchers: Map<string, Set<() => void>> = new Map();
+    private _accessValidator?: (path: string, operation: 'read' | 'write' | 'delete') => boolean;
 
     constructor() {
         // Initialize storage from external JSON image
@@ -15,6 +16,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
         if (sysDir && sysDir['sysconf.json'] && (!sysDir['sysconf.json'].content || sysDir['sysconf.json'].content === '')) {
             sysDir['sysconf.json'].content = JSON.stringify(registryInitialData, null, 2);
         }
+    }
+
+    public setAccessValidator(validator: (path: string, operation: 'read' | 'write' | 'delete') => boolean): void {
+        this._accessValidator = validator;
     }
 
     private resolvePath(path: string): VFSNode | null {
@@ -64,6 +69,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
     }
 
     public writeFile(path: string, content: string, metadata: VFSMetadata | null = null): boolean {
+        if (this._accessValidator && !this._accessValidator(path, 'write')) {
+            return false;
+        }
+
         const parts = path.split('/').filter(p => p.length > 0);
         const fileName = parts.pop();
         if (!fileName) return false;
@@ -87,6 +96,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
     }
 
     public mkdir(path: string): boolean {
+        if (this._accessValidator && !this._accessValidator(path, 'write')) {
+            return false;
+        }
+
         const parts = path.split('/').filter(p => p.length > 0);
         const dirName = parts.pop();
         if (!dirName) return false;
@@ -126,6 +139,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
     }
 
     public rename(oldPath: string, newName: string): boolean {
+        if (this._accessValidator && (!this._accessValidator(oldPath, 'delete') || !this._accessValidator(oldPath, 'write'))) {
+            return false;
+        }
+
         const parts = oldPath.split('/').filter(p => p.length > 0);
         const oldName = parts.pop();
         if (!oldName) return false;
@@ -144,6 +161,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
     }
 
     public move(oldPath: string, newDirPath: string): boolean {
+        if (this._accessValidator && (!this._accessValidator(oldPath, 'delete') || !this._accessValidator(newDirPath, 'write'))) {
+            return false;
+        }
+
         const parts = oldPath.split('/').filter(p => p.length > 0);
         const fileName = parts.pop();
         if (!fileName) return false;
@@ -165,6 +186,10 @@ export class VirtualFileSystem implements IVirtualFileSystem {
     }
 
     public delete(path: string): boolean {
+        if (this._accessValidator && !this._accessValidator(path, 'delete')) {
+            return false;
+        }
+
         const parts = path.split('/').filter(p => p.length > 0);
         const name = parts.pop();
         if (!name) return false;

@@ -50,6 +50,29 @@ export interface IVirtualFileSystem {
     createWriteStream(path: string): VFSStream;
     exportImage(): string;
     importImage(imageData: string): boolean;
+    setAccessValidator?(validator: (path: string, operation: 'read' | 'write' | 'delete') => boolean): void;
+}
+
+export interface ISession {
+    sessionId: string;
+    user: User;
+    loginTime: number;
+    isElevated: boolean;
+    elevatedUntil?: number;
+    tokens: string[];
+    environment: Record<string, string>;
+}
+
+export interface ISessionManager {
+    currentSession: ISession | null;
+    createSession(user: User): ISession;
+    endSession(): void;
+    getCurrentSession(): ISession | null;
+    getCurrentUser(): User | null;
+    elevate(durationMs?: number): void;
+    isElevated(): boolean;
+    dropElevation(): void;
+    hasPrivilege(required: 'admin' | 'user' | 'guest'): boolean;
 }
 
 export interface User {
@@ -77,6 +100,7 @@ export interface AppInstance {
     element: HTMLElement;
     overlay?: HTMLElement;
     modalOverlay?: HTMLElement;
+    layer?: 'user' | 'admin';
     close(): void;
     minimize(): void;
     maximize(): void;
@@ -119,12 +143,19 @@ export interface IWindowManager {
     createWindow(options: WindowOptions): string;
     closeWindow(id: string): void;
     getById(id: string): AppInstance | null;
+    getAll(): AppInstance[];
     getActiveId(): string | null;
     focusWindow(id: string): void;
     updateTaskbar(): void;
     showContextMenu(x: number, y: number, items: MenuItem[]): void;
     showTooltip(el: HTMLElement, options: { text: string; delay?: number }): void;
     createElement(options: CreateElementOptions): HTMLElement;
+    mountShell(): void;
+    unmountShell(): void;
+    syncAdminLayer(): void;
+    showDialog(options: DialogOptions): AppInstance | null;
+    addTrayIcon(options: TrayIconOptions): TrayIconInstance;
+    showBalloonTip(target: HTMLElement, options: { title: string; message: string; timeout?: number }): void;
 }
 
 export interface CreateElementOptions {
@@ -466,6 +497,7 @@ export interface DialogOptions {
     icon?: string;
     detailsText?: string;
     colorValue?: string;
+    layer?: 'user' | 'admin';
 }
 
 export interface IFCCF {
@@ -512,11 +544,38 @@ export interface IRegistry {
     flush(): void;
 }
 
+export interface AccessCheckResult {
+    allowed: boolean;
+    reason?: string;
+    requiresElevation?: boolean;
+}
+
+export type SystemAction = 
+    | 'file:read'
+    | 'file:write'
+    | 'file:delete'
+    | 'registry:read'
+    | 'registry:write'
+    | 'registry:delete'
+    | 'app:exec'
+    | 'system:shutdown'
+    | 'system:admin';
+
+export interface IAccessControl {
+    checkAccess(
+        action: SystemAction,
+        target?: string,
+        callerUser?: User | null
+    ): AccessCheckResult;
+}
+
 export interface IKernel {
     VFS: IVirtualFileSystem;
     WindowManager: IWindowManager;
     FCCF: IFCCF;
     Registry: IRegistry;
+    Session: ISessionManager;
+    AccessControl: IAccessControl;
     Auth: {
         currentUser: User | null;
         login(username: string, password?: string): boolean;
@@ -528,8 +587,9 @@ export interface IKernel {
         requestEscalation(callback: (success: boolean) => void): void;
     };
     FS: {
-        checkAccess(path: string, operation: 'read' | 'write'): boolean;
+        checkAccess(path: string, operation: 'read' | 'write' | 'delete'): boolean;
     };
+    reboot(): void;
     hash(str: string): string;
     exec<T = unknown>(path: string, args?: T): Promise<boolean>;
     addTrayIcon(options: TrayIconOptions): TrayIconInstance;

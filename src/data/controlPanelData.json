@@ -70,5 +70,99 @@
       "icon": "https://img.icons8.com/color/48/000000/network.png",
       "action": "networkDialog"
     }
-  ]
+  ],
+  "applets": [
+    {
+      "id": "display",
+      "name": "Display",
+      "desc": "Change desktop theme, screen saver, and monitor resolution.",
+      "icon": "https://img.icons8.com/color/48/000000/monitor.png",
+      "category": "appearance",
+      "action": "display"
+    },
+    {
+      "id": "security",
+      "name": "Security Center",
+      "desc": "Configure Firewall, Automatic Updates, and Antivirus protection.",
+      "icon": "https://img.icons8.com/color/48/000000/security-checked.png",
+      "category": "security",
+      "action": "wscui"
+    },
+    {
+      "id": "network",
+      "name": "Network Connections",
+      "desc": "Connect to the Internet, configure LAN and TCP/IP settings.",
+      "icon": "https://img.icons8.com/color/48/000000/network.png",
+      "category": "network",
+      "action": "networkInfo"
+    },
+    {
+      "id": "appwiz",
+      "name": "Add or Remove Programs",
+      "desc": "Install, modify, or remove software applications and system components.",
+      "icon": "https://img.icons8.com/color/48/000000/add-folder.png",
+      "category": "programs",
+      "action": "appwiz"
+    },
+    {
+      "id": "nusrmgr",
+      "name": "User Accounts",
+      "desc": "Change user passwords, profile pictures, and access rights.",
+      "icon": "https://img.icons8.com/color/48/000000/user.png",
+      "category": "users",
+      "action": "nusrmgr"
+    },
+    {
+      "id": "sysdm",
+      "name": "System",
+      "desc": "View system properties, hardware, and performance settings.",
+      "icon": "https://img.icons8.com/color/48/000000/system-task.png",
+      "category": "system",
+      "action": "sysdm"
+    },
+    {
+      "id": "timedate",
+      "name": "Date and Time",
+      "desc": "Set the date, time, and time zone for your computer.",
+      "icon": "https://img.icons8.com/color/48/000000/calendar.png",
+      "category": "datetime",
+      "action": "timedate"
+    },
+    {
+      "id": "admin",
+      "name": "Administrative Tools",
+      "desc": "Manage local policies, users, groups, and services.",
+      "icon": "https://img.icons8.com/color/48/000000/administrative-tools.png",
+      "category": "admin",
+      "action": "admin"
+    },
+    {
+      "id": "regedit",
+      "name": "Registry Editor",
+      "desc": "Modify system registry keys and configurations directly.",
+      "icon": "https://img.icons8.com/color/48/000000/registry-editor.png",
+      "category": "admin",
+      "action": "regedit"
+    },
+    {
+      "id": "clearbatch",
+      "name": "ClearBatch Engine",
+      "desc": "Declarative JSON visual workflow and runtime executor.",
+      "icon": "https://img.icons8.com/color/48/000000/flow-chart.png",
+      "category": "clearbatch",
+      "action": "clearbatch"
+    }
+  ],
+  "strings": {
+    "title": "Control Panel",
+    "icon": "https://img.icons8.com/color/48/000000/settings.png",
+    "networkDialogTitle": "Local Area Connection Status",
+    "networkDialogMessage": "Samsoft FXP OS Network Adapter\nStatus: Connected\nSpeed: 1.0 Gbps\nIP Address: 192.168.1.150\nSubnet: 255.255.255.0\nGateway: 192.168.1.1",
+    "tasksHeader": "Control Panel Tasks",
+    "switchClassic": "Switch to Classic View",
+    "switchCategory": "Switch to Category View",
+    "seeAlso": "See Also",
+    "windowsUpdate": "Windows Update",
+    "helpAndSupport": "Help and Support"
+  }
 }

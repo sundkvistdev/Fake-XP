@@ -1,0 +1,53 @@
+{
+  "strings": {
+    "title": "Calculator",
+    "icon": "https://img.icons8.com/color/48/000000/calculator.png",
+    "helpTitle": "Calculator Help",
+    "helpMessage": "Calculator provides standard and scientific mathematical calculation capabilities.",
+    "aboutTitle": "About Calculator",
+    "aboutMessage": "Microsoft (R) Calculator\nVersion 5.1 (Build 2600.xpsp_sp3_gdr)\nWin32 HIG Compliant",
+    "editMenu": "Edit",
+    "copy": "Copy",
+    "paste": "Paste",
+    "viewMenu": "View",
+    "standard": "Standard",
+    "scientific": "Scientific",
+    "helpMenu": "Help",
+    "helpTopics": "Help Topics",
+    "aboutCalculator": "About Calculator"
+  },
+  "topButtons": [
+    { "text": "Backspace", "action": "backspace" },
+    { "text": "CE", "action": "clearEntry" },
+    { "text": "C", "action": "clear" }
+  ],
+  "standardButtons": [
+    { "text": "MC", "type": "memory", "arg": "MC", "color": "#cc0000" },
+    { "text": "7", "type": "digit", "arg": "7", "bold": true },
+    { "text": "8", "type": "digit", "arg": "8", "bold": true },
+    { "text": "9", "type": "digit", "arg": "9", "bold": true },
+    { "text": "/", "type": "op", "arg": "/" },
+    { "text": "sqrt", "type": "unary", "arg": "sqrt" },
+
+    { "text": "MR", "type": "memory", "arg": "MR", "color": "#cc0000" },
+    { "text": "4", "type": "digit", "arg": "4", "bold": true },
+    { "text": "5", "type": "digit", "arg": "5", "bold": true },
+    { "text": "6", "type": "digit", "arg": "6", "bold": true },
+    { "text": "*", "type": "op", "arg": "*" },
+    { "text": "%", "type": "unary", "arg": "percent" },
+
+    { "text": "MS", "type": "memory", "arg": "MS", "color": "#cc0000" },
+    { "text": "1", "type": "digit", "arg": "1", "bold": true },
+    { "text": "2", "type": "digit", "arg": "2", "bold": true },
+    { "text": "3", "type": "digit", "arg": "3", "bold": true },
+    { "text": "-", "type": "op", "arg": "-" },
+    { "text": "1/x", "type": "unary", "arg": "inv" },
+
+    { "text": "M+", "type": "memory", "arg": "M+", "color": "#cc0000" },
+    { "text": "0", "type": "digit", "arg": "0", "bold": true },
+    { "text": "+/-", "type": "unary", "arg": "neg" },
+    { "text": ".", "type": "dot" },
+    { "text": "+", "type": "op", "arg": "+" },
+    { "text": "=", "type": "equals", "isDefault": true }
+  ]
+}

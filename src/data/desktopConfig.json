@@ -1,0 +1,111 @@
+{
+  "system": {
+    "title": "Samsoft FXP OS 2.1",
+    "brandPrefix": "Samsoft",
+    "brandHighlight": "FXP OS",
+    "edition": "Version 2.1 Professional",
+    "logonPrompt": "To begin, click your user name",
+    "passwordPrompt": "Type your password:",
+    "passwordError": "Incorrect password. Please try again."
+  },
+  "defaultCredentials": {
+    "Administrator": "12345678",
+    "User": "1234"
+  },
+  "themes": {
+    "Luna": {
+      "name": "Luna (Default Blue)",
+      "primary": "#0054e3",
+      "light": "#0058e6",
+      "dark": "#00309c",
+      "inactive": "#9db9eb"
+    },
+    "Olive": {
+      "name": "Olive Green",
+      "primary": "#738a5d",
+      "light": "#8ea375",
+      "dark": "#5a6b48",
+      "inactive": "#c5d0b9"
+    },
+    "Silver": {
+      "name": "Silver",
+      "primary": "#a0a0a0",
+      "light": "#b0b0b0",
+      "dark": "#808080",
+      "inactive": "#d0d0d0"
+    }
+  },
+  "clock": {
+    "intervalMs": 1000,
+    "defaultFormat": "12h"
+  },
+  "power": {
+    "turnOffButton": "Turn off computer",
+    "turnOffConfirmTitle": "Turn off computer?",
+    "cancelButton": "Cancel",
+    "turnOffAction": "Turn Off",
+    "shutdownHeading": "Samsoft FXP OS 2.1",
+    "shutdownMessage": "It is now safe to turn off your computer.",
+    "restartButton": "Turn On / Restart",
+    "logoffConfirmMessage": "Are you sure you want to log off?",
+    "restartExplorerNotice": "Explorer has been restarted."
+  },
+  "startMenu": {
+    "rightItems": [
+      { "name": "My Documents", "actionType": "explorer", "target": "C:/Documents" },
+      { "name": "My Pictures", "actionType": "dialog", "message": "My Pictures is empty." },
+      { "name": "My Music", "actionType": "dialog", "message": "My Music is empty." },
+      { "separator": true },
+      { "name": "My Computer", "actionType": "explorer", "target": "C:" },
+      { "name": "Control Panel", "actionType": "app", "target": "control" }
+    ],
+    "run": {
+      "label": "Run...",
+      "icon": "https://img.icons8.com/color/48/000000/run-command.png",
+      "dialogTitle": "Run",
+      "dialogMessage": "Type the name of a program, folder, document, or Internet resource, and Windows will open it for you."
+    }
+  },
+  "contextMenu": {
+    "desktop": [
+      {
+        "text": "Arrange Icons By",
+        "menu": [
+          { "text": "Name" },
+          { "text": "Size" },
+          { "text": "Type" },
+          { "text": "Modified" }
+        ]
+      },
+      { "text": "Refresh", "actionId": "refreshDesktop" },
+      { "separator": true },
+      { "text": "Paste", "actionId": "pasteClipboard" },
+      { "text": "Paste Shortcut" },
+      { "separator": true },
+      {
+        "text": "New",
+        "menu": [
+          { "text": "Folder", "actionId": "newFolder" },
+          { "text": "Shortcut" },
+          { "text": "Text Document", "actionId": "newTextDocument" }
+        ]
+      },
+      { "separator": true },
+      { "text": "Properties", "actionId": "openDisplayProperties" }
+    ],
+    "strings": {
+      "nothingToPaste": "Nothing to paste.",
+      "defaultFolderName": "C:/Desktop/New Folder",
+      "defaultDocName": "C:/Desktop/New Text Document.txt"
+    }
+  },
+  "tray": {
+    "antivirus": {
+      "title": "CentralFirm Antivirus",
+      "icon": "https://img.icons8.com/color/48/000000/shield.png",
+      "balloonTitle": "CentralFirm Antivirus",
+      "balloonMessage": "Your computer is protected. No threats found.",
+      "balloonDelayMs": 2000
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "strings": {
+    "appTitle": "Windows Media Player",
+    "ready": "Ready",
+    "playing": "Playing: {track}",
+    "paused": "Paused",
+    "stopped": "Stopped",
+    "initialTime": "00:00",
+    "version": "Windows Media Player 9",
+    "icon": "https://img.icons8.com/color/48/000000/windows-media-player.png",
+    "openMediaTitle": "Open Media",
+    "openMediaMessage": "Select media file from C:\\Music\\",
+    "aboutApp": "Windows Media Player"
+  },
+  "buttons": {
+    "play": "▶ Play",
+    "pause": "⏸ Pause",
+    "stop": "⏹ Stop"
+  },
+  "tracks": [
+    { "name": "Beethoven - Symphony No. 9 (Ode to Joy)", "frequency": 330 },
+    { "name": "Mozart - Eine kleine Nachtmusik", "frequency": 392 },
+    { "name": "Vivaldi - Spring (The Four Seasons)", "frequency": 440 },
+    { "name": "Chopin - Nocturne in E-flat major", "frequency": 494 },
+    { "name": "Bach - Air on the G String", "frequency": 261 }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "system": {
+    "brandPrefix": "${$COMPANY || 'Samsoft'}",
+    "brandHighlight": "${System.Product || 'FXP'}",
+    "osName": "${$OS || 'Samsoft FXP OS 2.1'}",
+    "edition": "${$EDITION || 'Professional'}",
+    "version": "${$VERSION || '2.1'}",
+    "copyright": "${$COPYRIGHT || 'Copyright \u00a9 1985-2026 Samsoft Corporation'}",
+    "prompt": "Press any key to enter setup..."
+  },
+  "timing": {
+    "totalDurationMs": 3500,
+    "stepIntervalMs": 450,
+    "fadeDurationMs": 400
+  },
+  "progress": {
+    "trackWidthRem": 15,
+    "blockCount": 3,
+    "speedSeconds": 1.4
+  },
+  "bootStages": [
+    {
+      "id": "stage-kernel",
+      "text": "Starting ${$OS} Kernel...",
+      "weight": 10
+    },
+    {
+      "id": "stage-vfs",
+      "text": "Mounting Virtual File System (C: NTFS / FAT32)...",
+      "weight": 25
+    },
+    {
+      "id": "stage-adr",
+      "text": "Synchronizing ADR Registry Subsystem (${System.Product})...",
+      "weight": 40
+    },
+    {
+      "id": "stage-acl",
+      "text": "Initializing Access Control Layer (ACL) & Security Engine...",
+      "weight": 55
+    },
+    {
+      "id": "stage-clearbatch",
+      "text": "Bootstrapping ClearBatch Automation Runtime v${$VERSION}...",
+      "weight": 70
+    },
+    {
+      "id": "stage-extrax",
+      "text": "Initializing ExtraX Shell Component Framework...",
+      "weight": 85
+    },
+    {
+      "id": "stage-session",
+      "text": "Starting User Session Subsystem & Winlogon for ${System.ComputerName}...",
+      "weight": 95
+    },
+    {
+      "id": "stage-ready",
+      "text": "Boot sequence verified. Loading Welcome Screen...",
+      "weight": 100
+    }
+  ]
+}
