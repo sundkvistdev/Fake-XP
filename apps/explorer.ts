@@ -1,4 +1,4 @@
-import { IFCCF, IKernel, IVirtualFileSystem } from '../src/types';
+import { IFCCF, IKernel, IVirtualFileSystem, MenuItem } from '../src/types';
 import { ExtraX } from '../src/extrax';
 
 export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IVirtualFileSystem) {
@@ -6,9 +6,10 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     const isDesktop = expArgs && expArgs.mode === 'desktop';
     const initialPath = isDesktop ? 'C:/Desktop' : (expArgs?.initialPath || (Array.isArray(args) && typeof args[0] === 'string' ? args[0] : 'C:'));
 
+    type ExplorerViewMode = 'thumbnails' | 'tiles' | 'icons' | 'list' | 'details';
     const [getPath, setPath, subscribePath] = FCCF.useState<string>(initialPath);
-    const [getViewMode, setViewMode, subscribeViewMode] = FCCF.useState<'icons' | 'list' | 'details'>(
-        XP_API.Registry.get<'icons' | 'list' | 'details'>('Apps/Explorer/ViewMode', 'icons')
+    const [getViewMode, setViewMode, subscribeViewMode] = FCCF.useState<ExplorerViewMode>(
+        XP_API.Registry.get<ExplorerViewMode>('Apps/Explorer/ViewMode', 'icons')
     );
     const [getHistory, setHistory] = FCCF.useState<string[]>([initialPath]);
     const [getHistoryIndex, setHistoryIndex] = FCCF.useState<number>(0);
@@ -110,77 +111,17 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     };
 
     if (isDesktop) {
-        const desktopIcons = document.getElementById('desktop-icons');
-        const renderDesktop = () => {
-            if (!desktopIcons) return;
-            desktopIcons.innerHTML = '';
-            const items = VFS.ls('C:/Desktop');
-            items.forEach(item => {
-                const fullPath = `C:/Desktop/${item}`;
-                const stat = VFS.stat(fullPath);
-                const icon = XP_API.getIcon(fullPath);
-
-                const itemEl = document.createElement('div');
-                itemEl.className = 'desktop-icon';
-
-                const img = FCCF.Controls.Icon({ src: icon, size: '2rem' });
-                const span = document.createElement('span');
-                span.innerText = item.replace('.lnk', '');
-
-                itemEl.appendChild(img.el);
-                itemEl.appendChild(span);
-
-                itemEl.onclick = (e) => {
-                    e.stopPropagation();
-                    XP_API.exec(fullPath);
-                };
-
-                itemEl.oncontextmenu = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    XP_API.showContextMenu(e.clientX, e.clientY, [
-                        { text: 'Open', action: () => XP_API.exec(fullPath) },
-                        { separator: true },
-                        { text: 'Cut' },
-                        { text: 'Copy' },
-                        { separator: true },
-                        { text: 'Delete', action: () => safeDelete(fullPath, item, renderDesktop) },
-                        { text: 'Rename', action: () => {
-                            XP_API.showDialog({
-                                type: 'prompt',
-                                title: 'Rename',
-                                message: `Enter new name for '${item}':`,
-                                value: item,
-                                onOk: (newName) => {
-                                    if (typeof newName === 'string' && newName.trim()) {
-                                        const check = XP_API.AccessControl ? XP_API.AccessControl.checkAccess('file:write', fullPath) : { allowed: true };
-                                        if (!check.allowed) {
-                                            XP_API.showDialog({ title: 'Access Denied', message: check.reason || 'Cannot rename this item.', type: 'error' });
-                                            return;
-                                        }
-                                        VFS.rename(fullPath, newName.trim());
-                                        renderDesktop();
-                                    }
-                                }
-                            });
-                        }},
-                        { separator: true },
-                        { text: 'Properties', action: () => {
-                            XP_API.showDialog({
-                                title: `${item} Properties`,
-                                message: `Type: ${stat?.type === 'dir' ? 'File Folder' : 'File'}\nLocation: C:\\Desktop\nSize: ${stat?.content ? stat.content.length : 0} bytes`,
-                                type: 'info'
-                            });
-                        }}
-                    ]);
-                };
-
-                desktopIcons.appendChild(itemEl);
-            });
-        };
-
-        renderDesktop();
-        VFS.watch('C:/Desktop', renderDesktop);
+        const desktopEl = document.getElementById('desktop');
+        const sct = XP_API.getSCT();
+        const wallpaper = (sct.Wallpaper as string) || undefined;
+        ExtraX.createDesktop({
+            container: desktopEl || undefined,
+            backgroundImage: wallpaper,
+            kernel: XP_API,
+            vfs: VFS,
+            fccf: FCCF,
+            desktopPath: 'C:/Desktop'
+        });
         return;
     }
 
@@ -201,6 +142,47 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     contentContainer.style.background = '#ffffff';
     contentContainer.style.overflow = 'auto';
 
+    let sortColumn: 'name' | 'size' | 'type' | 'date' | null = null;
+    let sortDirection: 'asc' | 'desc' = 'asc';
+
+    const explorerViewModes: { id: ExplorerViewMode; label: string }[] = [
+        { id: 'thumbnails', label: 'Thumbnails' },
+        { id: 'tiles', label: 'Tiles' },
+        { id: 'icons', label: 'Icons' },
+        { id: 'list', label: 'List' },
+        { id: 'details', label: 'Details' }
+    ];
+
+    const changeExplorerViewMode = (mode: ExplorerViewMode) => {
+        setViewMode(mode);
+        XP_API.Registry.set('Apps/Explorer/ViewMode', mode);
+        explorerViewRadioItems.forEach(item => {
+            const target = explorerViewModes.find(vm => vm.id === mode);
+            item.checked = item.text === target?.label;
+        });
+        menuViewRadioItems.forEach(item => {
+            const target = explorerViewModes.find(vm => vm.id === mode);
+            item.checked = item.text === target?.label;
+        });
+        renderContents(getPath());
+    };
+
+    const explorerViewRadioItems: MenuItem[] = explorerViewModes.map(vm => ({
+        text: vm.label,
+        radio: true,
+        radioGroup: 'explorer_view_mode',
+        checked: vm.id === getViewMode(),
+        action: () => changeExplorerViewMode(vm.id)
+    }));
+
+    const menuViewRadioItems: MenuItem[] = explorerViewModes.map(vm => ({
+        text: vm.label,
+        radio: true,
+        radioGroup: 'explorer_view_mode',
+        checked: vm.id === getViewMode(),
+        action: () => changeExplorerViewMode(vm.id)
+    }));
+
     const renderContents = (path: string) => {
         contentContainer.innerHTML = '';
         const items = VFS.ls(path);
@@ -212,37 +194,107 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
 
         if (mode === 'details') {
             const table = document.createElement('table');
-            table.className = 'xp-listview';
-            table.innerHTML = `
-                <thead>
-                    <tr>
-                        <th style="width: 45%;">Name</th>
-                        <th style="width: 20%;">Size</th>
-                        <th style="width: 20%;">Type</th>
-                        <th style="width: 15%;">Date Modified</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            `;
-            const tbody = table.querySelector('tbody')!;
+            table.className = 'xp-listview extrax-table';
 
-            items.forEach(item => {
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th id="th-name" class="sortable" style="width: 40%; cursor: pointer;">
+                        Name <span class="sort-arrow">${sortColumn === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}</span>
+                    </th>
+                    <th id="th-size" class="sortable" style="width: 15%; cursor: pointer;">
+                        Size <span class="sort-arrow">${sortColumn === 'size' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}</span>
+                    </th>
+                    <th id="th-type" class="sortable" style="width: 25%; cursor: pointer;">
+                        Type <span class="sort-arrow">${sortColumn === 'type' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}</span>
+                    </th>
+                    <th id="th-date" class="sortable" style="width: 20%; cursor: pointer;">
+                        Date Modified <span class="sort-arrow">${sortColumn === 'date' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}</span>
+                    </th>
+                </tr>
+            `;
+
+            const thName = thead.querySelector('#th-name') as HTMLElement;
+            if (thName) {
+                thName.onclick = () => {
+                    sortDirection = sortColumn === 'name' && sortDirection === 'asc' ? 'desc' : 'asc';
+                    sortColumn = 'name';
+                    renderContents(path);
+                };
+            }
+            const thSize = thead.querySelector('#th-size') as HTMLElement;
+            if (thSize) {
+                thSize.onclick = () => {
+                    sortDirection = sortColumn === 'size' && sortDirection === 'asc' ? 'desc' : 'asc';
+                    sortColumn = 'size';
+                    renderContents(path);
+                };
+            }
+            const thType = thead.querySelector('#th-type') as HTMLElement;
+            if (thType) {
+                thType.onclick = () => {
+                    sortDirection = sortColumn === 'type' && sortDirection === 'asc' ? 'desc' : 'asc';
+                    sortColumn = 'type';
+                    renderContents(path);
+                };
+            }
+            const thDate = thead.querySelector('#th-date') as HTMLElement;
+            if (thDate) {
+                thDate.onclick = () => {
+                    sortDirection = sortColumn === 'date' && sortDirection === 'asc' ? 'desc' : 'asc';
+                    sortColumn = 'date';
+                    renderContents(path);
+                };
+            }
+
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+
+            const itemRecords = items.map(item => {
                 const fullPath = path === 'C:' ? `C:/${item}` : `${path}/${item}`;
                 const stat = VFS.stat(fullPath);
                 const icon = XP_API.getIcon(fullPath);
                 const isDir = stat && stat.type === 'dir';
                 const size = stat?.content ? stat.content.length : 0;
                 totalSize += size;
+                const typeStr = isDir ? 'File Folder' : (item.endsWith('.txt') ? 'Text Document' : 'Application / File');
+                const dateStr = new Date().toLocaleDateString();
+                return { item, fullPath, isDir, size, icon, typeStr, dateStr };
+            });
 
+            if (sortColumn) {
+                itemRecords.sort((a, b) => {
+                    let valA = '';
+                    let valB = '';
+                    if (sortColumn === 'name') {
+                        valA = a.item.toLowerCase();
+                        valB = b.item.toLowerCase();
+                    } else if (sortColumn === 'size') {
+                        return sortDirection === 'asc' ? a.size - b.size : b.size - a.size;
+                    } else if (sortColumn === 'type') {
+                        valA = a.typeStr.toLowerCase();
+                        valB = b.typeStr.toLowerCase();
+                    } else if (sortColumn === 'date') {
+                        valA = a.dateStr;
+                        valB = b.dateStr;
+                    }
+                    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            itemRecords.forEach(rec => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="display:flex;align-items:center;gap:0.375rem;">
-                        <img src="${icon}" style="width:1rem;height:1rem;" referrerPolicy="no-referrer">
-                        <span>${item.replace('.lnk', '')}</span>
+                        <img src="${rec.icon}" style="width:1rem;height:1rem;" referrerPolicy="no-referrer">
+                        <span>${rec.item.replace('.lnk', '')}</span>
                     </td>
-                    <td>${isDir ? '' : `${(size / 1024).toFixed(1)} KB`}</td>
-                    <td>${isDir ? 'File Folder' : (item.endsWith('.txt') ? 'Text Document' : 'Application / File')}</td>
-                    <td>${new Date().toLocaleDateString()}</td>
+                    <td>${rec.isDir ? '' : `${(rec.size / 1024).toFixed(1)} KB`}</td>
+                    <td>${rec.typeStr}</td>
+                    <td>${rec.dateStr}</td>
                 `;
 
                 tr.onclick = () => {
@@ -251,22 +303,19 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 };
 
                 tr.ondblclick = () => {
-                    if (isDir) navigateTo(fullPath);
-                    else XP_API.exec(fullPath);
+                    if (rec.isDir) navigateTo(rec.fullPath);
+                    else XP_API.exec(rec.fullPath);
                 };
 
-                tr.oncontextmenu = (e) => showItemContextMenu(e, item, fullPath, isDir);
+                tr.oncontextmenu = (e) => showItemContextMenu(e, rec.item, rec.fullPath, rec.isDir);
                 tbody.appendChild(tr);
             });
 
+            table.appendChild(tbody);
             contentContainer.appendChild(table);
-        } else {
+        } else if (mode === 'thumbnails') {
             const grid = document.createElement('div');
-            grid.style.display = 'grid';
-            grid.style.gridTemplateColumns = mode === 'icons' ? 'repeat(auto-fill, minmax(4.6875rem, 1fr))' : 'repeat(auto-fill, minmax(12.5rem, 1fr))';
-            grid.style.gap = '0.5rem';
-            grid.style.padding = '0.625rem';
-            grid.style.alignContent = 'flex-start';
+            grid.className = 'extrax-thumbnails-grid';
 
             items.forEach(item => {
                 const fullPath = path === 'C:' ? `C:/${item}` : `${path}/${item}`;
@@ -277,20 +326,158 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 totalSize += size;
 
                 const itemEl = document.createElement('div');
-                itemEl.style.display = 'flex';
-                itemEl.style.flexDirection = mode === 'icons' ? 'column' : 'row';
-                itemEl.style.alignItems = 'center';
-                itemEl.style.gap = '0.25rem';
-                itemEl.style.padding = '0.25rem';
-                itemEl.style.cursor = 'pointer';
-                itemEl.style.borderRadius = '0.125rem';
-                itemEl.style.border = '1px solid transparent';
-                itemEl.style.textAlign = 'center';
+                itemEl.className = 'extrax-thumbnail-item';
+                itemEl.tabIndex = 0;
+
+                const frame = document.createElement('div');
+                frame.className = 'extrax-thumbnail-frame';
 
                 const img = document.createElement('img');
                 img.src = icon;
-                img.style.width = mode === 'icons' ? '2rem' : '1rem';
-                img.style.height = mode === 'icons' ? '2rem' : '1rem';
+                img.referrerPolicy = 'no-referrer';
+                frame.appendChild(img);
+                itemEl.appendChild(frame);
+
+                const span = document.createElement('span');
+                span.className = 'extrax-thumbnail-title';
+                span.innerText = item.replace('.lnk', '');
+                itemEl.appendChild(span);
+
+                itemEl.onclick = () => {
+                    grid.querySelectorAll('.extrax-thumbnail-item').forEach(d => d.classList.remove('selected'));
+                    itemEl.classList.add('selected');
+                };
+
+                itemEl.ondblclick = () => {
+                    if (isDir) navigateTo(fullPath);
+                    else XP_API.exec(fullPath);
+                };
+
+                itemEl.oncontextmenu = (e) => showItemContextMenu(e, item, fullPath, isDir);
+                grid.appendChild(itemEl);
+            });
+
+            contentContainer.appendChild(grid);
+        } else if (mode === 'tiles') {
+            const grid = document.createElement('div');
+            grid.className = 'extrax-tiles-grid';
+
+            items.forEach(item => {
+                const fullPath = path === 'C:' ? `C:/${item}` : `${path}/${item}`;
+                const stat = VFS.stat(fullPath);
+                const icon = XP_API.getIcon(fullPath);
+                const isDir = stat && stat.type === 'dir';
+                const size = stat?.content ? stat.content.length : 0;
+                totalSize += size;
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'extrax-tile-item';
+                itemEl.tabIndex = 0;
+
+                const img = document.createElement('img');
+                img.src = icon;
+                img.style.width = '2.25rem';
+                img.style.height = '2.25rem';
+                img.style.objectFit = 'contain';
+                img.referrerPolicy = 'no-referrer';
+                itemEl.appendChild(img);
+
+                const info = document.createElement('div');
+                info.style.display = 'flex';
+                info.style.flexDirection = 'column';
+                info.style.minWidth = '0';
+                info.style.flex = '1';
+
+                const title = document.createElement('div');
+                title.className = 'extrax-tile-title';
+                title.innerText = item.replace('.lnk', '');
+                info.appendChild(title);
+
+                const desc = document.createElement('div');
+                desc.className = 'extrax-tile-desc';
+                desc.innerText = isDir ? 'File Folder' : `${(size / 1024).toFixed(1)} KB`;
+                info.appendChild(desc);
+
+                itemEl.appendChild(info);
+
+                itemEl.onclick = () => {
+                    grid.querySelectorAll('.extrax-tile-item').forEach(d => d.classList.remove('selected'));
+                    itemEl.classList.add('selected');
+                };
+
+                itemEl.ondblclick = () => {
+                    if (isDir) navigateTo(fullPath);
+                    else XP_API.exec(fullPath);
+                };
+
+                itemEl.oncontextmenu = (e) => showItemContextMenu(e, item, fullPath, isDir);
+                grid.appendChild(itemEl);
+            });
+
+            contentContainer.appendChild(grid);
+        } else if (mode === 'list') {
+            const grid = document.createElement('div');
+            grid.className = 'extrax-list-grid';
+
+            items.forEach(item => {
+                const fullPath = path === 'C:' ? `C:/${item}` : `${path}/${item}`;
+                const stat = VFS.stat(fullPath);
+                const icon = XP_API.getIcon(fullPath);
+                const isDir = stat && stat.type === 'dir';
+                const size = stat?.content ? stat.content.length : 0;
+                totalSize += size;
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'extrax-list-item';
+                itemEl.tabIndex = 0;
+
+                const img = document.createElement('img');
+                img.src = icon;
+                img.referrerPolicy = 'no-referrer';
+                itemEl.appendChild(img);
+
+                const span = document.createElement('span');
+                span.className = 'extrax-list-title';
+                span.innerText = item.replace('.lnk', '');
+                itemEl.appendChild(span);
+
+                itemEl.onclick = () => {
+                    grid.querySelectorAll('.extrax-list-item').forEach(d => d.classList.remove('selected'));
+                    itemEl.classList.add('selected');
+                };
+
+                itemEl.ondblclick = () => {
+                    if (isDir) navigateTo(fullPath);
+                    else XP_API.exec(fullPath);
+                };
+
+                itemEl.oncontextmenu = (e) => showItemContextMenu(e, item, fullPath, isDir);
+                grid.appendChild(itemEl);
+            });
+
+            contentContainer.appendChild(grid);
+        } else {
+            // mode === 'icons'
+            const grid = document.createElement('div');
+            grid.className = 'extrax-icons-grid';
+
+            items.forEach(item => {
+                const fullPath = path === 'C:' ? `C:/${item}` : `${path}/${item}`;
+                const stat = VFS.stat(fullPath);
+                const icon = XP_API.getIcon(fullPath);
+                const isDir = stat && stat.type === 'dir';
+                const size = stat?.content ? stat.content.length : 0;
+                totalSize += size;
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'extrax-applet-item';
+                itemEl.tabIndex = 0;
+
+                const img = document.createElement('img');
+                img.src = icon;
+                img.style.width = '2.25rem';
+                img.style.height = '2.25rem';
+                img.style.objectFit = 'contain';
                 img.referrerPolicy = 'no-referrer';
 
                 const span = document.createElement('span');
@@ -302,12 +489,8 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                 itemEl.appendChild(span);
 
                 itemEl.onclick = () => {
-                    grid.querySelectorAll('div').forEach(d => {
-                        d.style.background = 'transparent';
-                        d.style.borderColor = 'transparent';
-                    });
-                    itemEl.style.background = '#e5f3ff';
-                    itemEl.style.borderColor = '#70c0e7';
+                    grid.querySelectorAll('.extrax-applet-item').forEach(d => d.classList.remove('selected'));
+                    itemEl.classList.add('selected');
                 };
 
                 itemEl.ondblclick = () => {
@@ -436,9 +619,7 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
             {
                 text: 'View',
                 menu: [
-                    { text: 'Icons', checked: getViewMode() === 'icons', action: () => { setViewMode('icons'); renderContents(getPath()); } },
-                    { text: 'List', checked: getViewMode() === 'list', action: () => { setViewMode('list'); renderContents(getPath()); } },
-                    { text: 'Details', checked: getViewMode() === 'details', action: () => { setViewMode('details'); renderContents(getPath()); } },
+                    ...menuViewRadioItems,
                     { separator: true },
                     { text: 'Refresh', shortcut: 'F5', action: () => renderContents(getPath()) }
                 ]
@@ -491,11 +672,13 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
                     }
                 });
             }},
-            { id: 'views', text: 'Views', icon: 'https://img.icons8.com/color/48/000000/list.png', onClick: () => {
-                const next = getViewMode() === 'icons' ? 'list' : (getViewMode() === 'list' ? 'details' : 'icons');
-                setViewMode(next);
-                renderContents(getPath());
-            }}
+            {
+                id: 'views',
+                text: 'Views',
+                icon: 'https://img.icons8.com/color/48/000000/list.png',
+                dropdown: true,
+                menu: explorerViewRadioItems
+            }
         ]
     });
 

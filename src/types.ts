@@ -135,6 +135,8 @@ export interface MenuItem {
     icon?: string;
     shortcut?: string;
     checked?: boolean;
+    radio?: boolean;
+    radioGroup?: string;
     disabled?: boolean;
     menu?: MenuItem[];
 }
@@ -265,6 +267,8 @@ export interface ToolbarItem {
     separator?: boolean;
     disabled?: boolean;
     active?: boolean;
+    dropdown?: boolean;
+    menu?: MenuItem[];
     onClick?: () => void;
 }
 

@@ -363,7 +363,15 @@ export class CentralComponentFramework implements IFCCF {
                     
                     const icon = document.createElement('div');
                     icon.className = 'fccf-menu-item-icon';
-                    if (item.checked) {
+                    if (item.radio) {
+                        if (item.checked) {
+                            icon.innerText = '●';
+                            icon.classList.add('radio-bullet');
+                        } else {
+                            icon.innerText = '';
+                            icon.classList.remove('radio-bullet');
+                        }
+                    } else if (item.checked) {
                         icon.innerText = '✓';
                     } else if (item.icon) {
                         const img = document.createElement('img');
@@ -397,9 +405,19 @@ export class CentralComponentFramework implements IFCCF {
                     if (!item.disabled) {
                         el.onclick = (e) => {
                             e.stopPropagation();
-                            if (typeof item.checked === 'boolean') {
+                            if (item.radio) {
+                                const targetGroup = item.radioGroup || '__default_radio__';
+                                currentItems.forEach(it => {
+                                    const grp = it.radioGroup || '__default_radio__';
+                                    if (it.radio && grp === targetGroup) {
+                                        it.checked = false;
+                                    }
+                                });
+                                item.checked = true;
+                                renderItems(currentItems);
+                            } else if (typeof item.checked === 'boolean') {
                                 item.checked = !item.checked;
-                                icon.innerText = item.checked ? '✓' : '';
+                                renderItems(currentItems);
                             }
                             const actionToRun = item.onClick || item.action;
                             if (actionToRun) {
@@ -742,7 +760,26 @@ export class CentralComponentFramework implements IFCCF {
                     btn.appendChild(span);
                 }
 
-                if (item.onClick) {
+                if (item.dropdown || item.menu) {
+                    const arrow = document.createElement('span');
+                    arrow.className = 'xp-toolbtn-arrow';
+                    arrow.innerText = '▾';
+                    arrow.style.fontSize = '0.55rem';
+                    arrow.style.marginLeft = '0.25rem';
+                    arrow.style.pointerEvents = 'none';
+                    btn.appendChild(arrow);
+                }
+
+                if (item.menu) {
+                    const menuComp = this.Controls.Menu({ items: item.menu });
+                    document.body.appendChild(this.unpack(menuComp));
+                    btn.onclick = (e) => {
+                        e.stopPropagation();
+                        const rect = btn.getBoundingClientRect();
+                        (menuComp as unknown as { show: (x: number, y: number) => void }).show(rect.left, rect.bottom);
+                        if (item.onClick) item.onClick();
+                    };
+                } else if (item.onClick) {
                     btn.onclick = item.onClick;
                 }
 

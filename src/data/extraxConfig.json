@@ -1,19 +1,49 @@
 {
   "viewModes": [
-    { "id": "categories", "label": "Category View" },
-    { "id": "icons", "label": "Large Icons" },
+    { "id": "thumbnails", "label": "Thumbnails" },
     { "id": "tiles", "label": "Tiles" },
+    { "id": "icons", "label": "Icons" },
+    { "id": "list", "label": "List" },
     { "id": "details", "label": "Details" }
   ],
   "strings": {
-    "back": "◀ Back",
-    "forward": "Forward ▶",
-    "up": "▲ Up",
-    "address": "Address",
-    "go": "Go ➔",
-    "pickCategory": "Pick a category"
+    "back": "Back",
+    "forward": "Forward",
+    "up": "Up",
+    "search": "Search",
+    "folders": "Folders",
+    "views": "Views",
+    "address": "Address:",
+    "go": "Go",
+    "file": "File",
+    "edit": "Edit",
+    "view": "View",
+    "favorites": "Favorites",
+    "tools": "Tools",
+    "help": "Help",
+    "refresh": "Refresh",
+    "toolbars": "Toolbars",
+    "statusBar": "Status Bar",
+    "standardButtons": "Standard Buttons",
+    "addressBar": "Address Bar",
+    "pickCategory": "Pick a category",
+    "objects": "objects",
+    "object": "object",
+    "computer": "My Computer",
+    "ready": "Ready",
+    "name": "Name",
+    "category": "Category / Info",
+    "description": "Description"
   },
   "icons": {
-    "defaultFolder": "https://img.icons8.com/color/16/000000/folder-invoices.png"
+    "back": "https://img.icons8.com/color/16/000000/left.png",
+    "forward": "https://img.icons8.com/color/16/000000/right.png",
+    "up": "https://img.icons8.com/color/16/000000/up.png",
+    "search": "https://img.icons8.com/color/16/000000/search--v1.png",
+    "folders": "https://img.icons8.com/color/16/000000/folder-invoices.png",
+    "views": "https://img.icons8.com/color/48/000000/list.png",
+    "defaultFolder": "https://img.icons8.com/color/16/000000/folder-invoices.png",
+    "computer": "https://img.icons8.com/color/16/000000/workstation.png"
   }
 }
+

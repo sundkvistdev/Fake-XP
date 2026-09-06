@@ -8,10 +8,14 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
     let currentViewMode: ExtraXViewMode = 'details';
 
     // Window Shell using ExtraX
+    let winInstance: { close: () => void } | undefined;
+
     const shell = ExtraX.createShell({
         title: adminData.meta.name,
         currentPath: 'Administrative Tools',
         viewMode: currentViewMode,
+        fccf: FCCF,
+        kernel: XP_API,
         expandos: [
             {
                 id: 'admin_tasks',
@@ -78,6 +82,12 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         onViewModeChange: (mode) => {
             currentViewMode = mode;
             renderContent();
+        },
+        onNavigate: (path) => {
+            if (path === '..' || path === 'C:' || path.toLowerCase().includes('admin')) {
+                currentCategory = 'categories';
+                renderContent();
+            }
         }
     });
 
@@ -265,8 +275,9 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         renderContent();
     };
 
-    // Navigation bar back button
-    const backBtn = shell.container.querySelector<HTMLButtonElement>('.extrax-nav-bar .extrax-nav-btn');
+    // Back button wiring
+    const backBtn = shell.toolbar.querySelector<HTMLButtonElement>('button#back') ||
+                    shell.container.querySelector<HTMLButtonElement>('.extrax-nav-bar .extrax-nav-btn');
     if (backBtn) {
         backBtn.onclick = () => {
             currentCategory = 'categories';
@@ -276,79 +287,6 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
 
     renderContent();
 
-    // Menu Strip
-    const menuStrip = FCCF.Controls.MenuStrip({
-        items: [
-            {
-                text: 'File',
-                menu: [
-                    {
-                        text: 'Exit',
-                        action: () => winInstance?.close()
-                    }
-                ]
-            },
-            {
-                text: 'Action',
-                menu: [
-                    {
-                        text: 'Refresh View',
-                        action: () => renderContent()
-                    },
-                    {
-                        text: 'Launch ClearBatch Suite',
-                        action: () => XP_API.exec('clearbatch')
-                    }
-                ]
-            },
-            {
-                text: 'View',
-                menu: [
-                    {
-                        text: 'Category View',
-                        action: () => {
-                            currentCategory = 'categories';
-                            renderContent();
-                        }
-                    },
-                    {
-                        text: 'System Services',
-                        action: () => switchView('services')
-                    },
-                    {
-                        text: 'Security Policies',
-                        action: () => switchView('policies')
-                    },
-                    {
-                        text: 'Event Viewer',
-                        action: () => switchView('audit')
-                    }
-                ]
-            },
-            {
-                text: 'Help',
-                menu: [
-                    {
-                        text: 'About Administrative Tools',
-                        action: () => {
-                            XP_API.showAboutDialog('Administrative Manager', 'Declarative Computer Management & Security Architecture powered by ClearBatch and ExtraX.');
-                        }
-                    }
-                ]
-            }
-        ]
-    });
-
-    const windowContent = document.createElement('div');
-    windowContent.style.display = 'flex';
-    windowContent.style.flexDirection = 'column';
-    windowContent.style.width = '100%';
-    windowContent.style.height = '100%';
-    windowContent.style.overflow = 'hidden';
-
-    windowContent.appendChild(menuStrip.el);
-    windowContent.appendChild(shell.container);
-
     const winId = XP_API.createWindow({
         title: adminData.window.title,
         width: adminData.window.width,
@@ -357,8 +295,8 @@ export default function run(args: unknown, FCCF: IFCCF, XP_API: IKernel, VFS: IV
         minHeight: adminData.window.minHeight,
         icon: adminData.window.icon,
         layer: 'user',
-        content: windowContent
+        content: shell.container
     });
 
-    const winInstance = XP_API.WindowManager.getById(winId);
+    winInstance = XP_API.WindowManager.getById(winId);
 }

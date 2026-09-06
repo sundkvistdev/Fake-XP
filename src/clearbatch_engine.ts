@@ -1,5 +1,5 @@
-import { IFCCF, IKernel, IVirtualFileSystem, FCCFComponent, AppInstance, TreeNode, TabControlComponent } from './types';
-import { ExtraX, ExtraXOrderedItem, ExtraXOrderedCategory, ExtraXViewMode } from './extrax';
+import { IFCCF, IKernel, IVirtualFileSystem, FCCFComponent, AppInstance, TreeNode, TabControlComponent, MenuStripItem } from './types';
+import { ExtraX, ExtraXOrderedItem, ExtraXOrderedCategory, ExtraXViewMode, ExtraXExpandoSection, ExtraXShellInstance } from './extrax';
 import systemInfo from './data/systemInfo.json';
 
 export interface IClearBatchTask {
@@ -561,6 +561,7 @@ export function renderClearBatchApp(
     };
 
     let activeTabControl: { setActiveTab: (id: string) => void } | null = null;
+    let shellInstance: ExtraXShellInstance | null = null;
 
     const handleBuiltInAction = async (act: string, c: IClearBatchContext) => {
         if (act === 'closeWindow') {
@@ -570,9 +571,17 @@ export function renderClearBatchApp(
         } else if (act === 'showClassic') {
             if (activeTabControl) activeTabControl.setActiveTab('tabClassic');
             c.updateState('activeTab', 'tabClassic');
+            c.updateState('currentAddress', 'Control Panel\\Classic View');
+            c.updateState('statusMessage', '11 objects available');
         } else if (act === 'showCategories') {
             if (activeTabControl) activeTabControl.setActiveTab('tabCategories');
             c.updateState('activeTab', 'tabCategories');
+            c.updateState('currentAddress', 'Control Panel');
+            c.updateState('statusMessage', '8 categories available');
+        } else if (act.startsWith('view:')) {
+            const mode = act.substring(5) as ExtraXViewMode;
+            c.updateState('viewMode', mode);
+            if (shellInstance) shellInstance.setViewMode(mode);
         } else if (act.startsWith('tab:')) {
             const tabId = act.substring(4);
             if (activeTabControl) activeTabControl.setActiveTab(tabId);
@@ -590,7 +599,116 @@ export function renderClearBatchApp(
         }
     };
 
-    // 1. Menu strip: THE ABSOLUTE FIRST STRIP IN A WINDOW
+    if (isExtraX) {
+        // Map appDef.extrax.taskpane to ExtraXExpandoSection[]
+        const expandos: ExtraXExpandoSection[] = (appDef.extrax?.taskpane || []).map(exp => ({
+            id: exp.id || exp.title.toLowerCase().replace(/\s+/g, '_'),
+            title: exp.title,
+            isSecondary: !!exp.secondary,
+            icon: exp.icon,
+            items: exp.items.map(it => ({
+                id: it.id || it.text.toLowerCase().replace(/\s+/g, '_'),
+                text: it.text,
+                icon: it.icon,
+                action: () => runAction(it.action)
+            }))
+        }));
+
+        // Map appDef.menu to MenuStripItem[]
+        const menuItems: MenuStripItem[] | undefined = appDef.menu ? appDef.menu.map(m => ({
+            text: m.text,
+            menu: m.items.map(it => ({
+                text: it.text || '',
+                separator: it.separator,
+                action: it.action ? () => runAction(it.action) : undefined
+            }))
+        })) : undefined;
+
+        shellInstance = ExtraX.createShell({
+            title: appDef.window?.title || 'Application',
+            currentPath: String(state['currentAddress'] || appDef.extrax?.initialAddress || 'Control Panel'),
+            viewMode: (state['viewMode'] as ExtraXViewMode) || 'tiles',
+            fccf,
+            kernel,
+            vfs,
+            expandos,
+            menuItems,
+            onViewModeChange: (mode) => {
+                updateState('viewMode', mode);
+            },
+            onNavigate: (path) => {
+                if (path === '..' || path === 'C:' || path.toLowerCase().includes('control')) {
+                    handleBuiltInAction('showCategories', ctx);
+                } else {
+                    updateState('currentAddress', path);
+                }
+            }
+        });
+
+        // Keep address in sync
+        subscribers.push(() => {
+            if (shellInstance && state['currentAddress']) {
+                shellInstance.setAddress(String(state['currentAddress']));
+            }
+        });
+
+        // Render Tabs (without tab bar in ExtraX!) or Direct Sections
+        if (appDef.tabs && appDef.tabs.length > 0) {
+            let currentTabId = (state['activeTab'] as string) || appDef.tabs[0].id;
+            const tabPanels: Record<string, HTMLElement> = {};
+
+            appDef.tabs.forEach(tab => {
+                const tabWrap = document.createElement('div');
+                Object.assign(tabWrap.style, {
+                    width: '100%',
+                    height: '100%',
+                    display: tab.id === currentTabId ? 'flex' : 'none',
+                    flexDirection: 'column',
+                    overflow: 'auto',
+                    boxSizing: 'border-box'
+                });
+
+                renderSections(tab.sections, tabWrap);
+
+                shellInstance!.contentArea.appendChild(tabWrap);
+                tabPanels[tab.id] = tabWrap;
+            });
+
+            activeTabControl = {
+                setActiveTab: (tabId: string) => {
+                    currentTabId = tabId;
+                    Object.entries(tabPanels).forEach(([tid, el]) => {
+                        el.style.display = tid === tabId ? 'flex' : 'none';
+                    });
+                }
+            };
+
+            subscribers.push(() => {
+                const targetTab = String(state['activeTab'] || '');
+                if (targetTab && tabPanels[targetTab] && targetTab !== currentTabId) {
+                    activeTabControl?.setActiveTab(targetTab);
+                }
+            });
+        } else if (appDef.sections) {
+            renderSections(appDef.sections, shellInstance.contentArea);
+        }
+
+        // Status bar
+        if (appDef.statusBar && appDef.statusBar.panels) {
+            const updateStatus = () => {
+                appDef.statusBar?.panels.forEach((p, idx) => {
+                    const text = p.text || (p.bind ? interpolateString(p.bind, state, kernel) : '');
+                    shellInstance?.setStatusText(text, idx);
+                });
+            };
+            updateStatus();
+            subscribers.push(updateStatus);
+        }
+
+        return shellInstance.container;
+    }
+
+    // 1. Menu strip: THE ABSOLUTE FIRST STRIP IN A STANDARD WINDOW
     if (appDef.menu && appDef.menu.length > 0) {
         const menuItems = appDef.menu.map(m => ({
             text: m.text,
@@ -604,230 +722,59 @@ export function renderClearBatchApp(
         rootContainer.appendChild(menuStrip.el);
     }
 
-    // 2. Navigation Toolbar / Address Bar (below the Menu Strip)
-    let addressInputEl: HTMLInputElement | null = null;
-    if (isExtraX && appDef.extrax?.navBar !== false) {
-        const navBar = document.createElement('div');
-        navBar.className = 'extrax-nav-bar';
-
-        const backBtn = document.createElement('button');
-        backBtn.className = 'extrax-nav-btn';
-        backBtn.innerText = '◀ Back';
-        backBtn.onclick = () => {
-            const hist = (state['_navHistory'] as string[]) || [];
-            if (hist.length > 1) {
-                hist.pop();
-                const prev = hist[hist.length - 1];
-                if (prev) {
-                    updateState('currentAddress', prev);
-                    if (addressInputEl) addressInputEl.value = prev;
-                }
-            }
-        };
-
-        const fwdBtn = document.createElement('button');
-        fwdBtn.className = 'extrax-nav-btn';
-        fwdBtn.innerText = 'Forward ▶';
-        fwdBtn.disabled = true;
-
-        const upBtn = document.createElement('button');
-        upBtn.className = 'extrax-nav-btn';
-        upBtn.innerText = '▲ Up';
-        upBtn.onclick = () => {
-            const upAddr = appDef.extrax?.initialAddress || (appDef.window?.title || 'Control Panel');
-            updateState('currentAddress', upAddr);
-            if (addressInputEl) addressInputEl.value = upAddr;
-        };
-
-        navBar.appendChild(backBtn);
-        navBar.appendChild(fwdBtn);
-        navBar.appendChild(upBtn);
-        rootContainer.appendChild(navBar);
-    }
-
-    // ExtraX: Address Bar (below Navigation Toolbar)
-    if (isExtraX && appDef.extrax?.addressBar !== false) {
-        const addrBar = document.createElement('div');
-        addrBar.className = 'extrax-address-bar';
-
-        const addrLabel = document.createElement('span');
-        addrLabel.style.fontSize = '11px';
-        addrLabel.style.color = '#555555';
-        addrLabel.innerText = 'Address';
-        addrBar.appendChild(addrLabel);
-
-        addressInputEl = document.createElement('input');
-        addressInputEl.className = 'extrax-address-input';
-        const initialAddr = appDef.extrax?.initialAddress || (appDef.window?.title || 'Control Panel');
-        state['currentAddress'] = state['currentAddress'] || initialAddr;
-        state['_navHistory'] = [state['currentAddress']];
-        addressInputEl.value = String(state['currentAddress']);
-        addressInputEl.onkeydown = (e) => {
-            if (e.key === 'Enter') {
-                const target = addressInputEl!.value.trim();
-                updateState('currentAddress', target);
-                const hist = (state['_navHistory'] as string[]) || [];
-                hist.push(target);
-            }
-        };
-        addrBar.appendChild(addressInputEl);
-
-        const goBtn = document.createElement('button');
-        goBtn.className = 'extrax-nav-btn';
-        goBtn.innerText = 'Go ➔';
-        goBtn.onclick = () => {
-            const target = addressInputEl!.value.trim();
-            updateState('currentAddress', target);
-            const hist = (state['_navHistory'] as string[]) || [];
-            hist.push(target);
-        };
-        addrBar.appendChild(goBtn);
-
-        subscribers.push(() => {
-            if (addressInputEl && state['currentAddress']) {
-                addressInputEl.value = String(state['currentAddress']);
-            }
-        });
-
-        rootContainer.appendChild(addrBar);
-    }
-
-    // ExtraX: Body container with Taskpane and Content
-    let contentTargetParent: HTMLElement = rootContainer;
-    if (isExtraX) {
-        const extraxBody = document.createElement('div');
-        extraxBody.className = 'extrax-body';
-
-        // Left Task Pane
-        const taskpane = document.createElement('div');
-        taskpane.className = 'extrax-taskpane';
-
-        const expandos = appDef.extrax?.taskpane || [];
-        expandos.forEach(exp => {
-            const expWrap = document.createElement('div');
-            expWrap.className = 'extrax-expando';
-
-            const header = document.createElement('div');
-            header.className = `extrax-expando-header ${exp.secondary ? 'secondary' : ''}`;
-
-            const titleSpan = document.createElement('span');
-            titleSpan.innerText = exp.title;
-            header.appendChild(titleSpan);
-
-            const chevron = document.createElement('span');
-            chevron.innerText = '▲';
-            chevron.style.fontSize = '9px';
-            header.appendChild(chevron);
-
-            const expBody = document.createElement('div');
-            expBody.className = 'extrax-expando-body';
-
-            header.onclick = () => {
-                const isHidden = expBody.style.display === 'none';
-                expBody.style.display = isHidden ? 'flex' : 'none';
-                chevron.innerText = isHidden ? '▲' : '▼';
-            };
-
-            exp.items.forEach(item => {
-                const taskItem = document.createElement('div');
-                taskItem.className = 'extrax-task-item';
-                taskItem.setAttribute('tabindex', '0');
-                taskItem.setAttribute('role', 'button');
-
-                if (item.icon) {
-                    const icon = document.createElement('img');
-                    icon.className = 'extrax-task-icon';
-                    icon.src = item.icon;
-                    taskItem.appendChild(icon);
-                }
-
-                const span = document.createElement('span');
-                span.innerText = item.text;
-                taskItem.appendChild(span);
-
-                taskItem.onclick = () => {
-                    if (item.action) runAction(item.action);
-                };
-                taskItem.onkeydown = (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        if (item.action) runAction(item.action);
-                    }
-                };
-
-                expBody.appendChild(taskItem);
-            });
-
-            expWrap.appendChild(header);
-            expWrap.appendChild(expBody);
-            taskpane.appendChild(expWrap);
-        });
-
-        extraxBody.appendChild(taskpane);
-
-        const extraxContent = document.createElement('div');
-        extraxContent.className = 'extrax-content';
-        if (appDef.extrax?.headerTitle) {
-            const hTitle = document.createElement('div');
-            hTitle.className = 'extrax-header-title';
-            hTitle.innerText = appDef.extrax.headerTitle;
-            extraxContent.appendChild(hTitle);
-        }
-
-        extraxBody.appendChild(extraxContent);
-        rootContainer.appendChild(extraxBody);
-
-        contentTargetParent = extraxContent;
-    }
-
     // 2. Main content area (Tabs OR Sections)
     const contentArea = document.createElement('div');
-    if (isExtraX) {
-        Object.assign(contentArea.style, {
-            display: 'flex',
-            flexDirection: 'column',
-            width: '100%',
-            height: '100%',
-            overflow: 'auto',
-            boxSizing: 'border-box'
-        });
-    } else {
-        Object.assign(contentArea.style, {
-            flex: '1',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'auto',
-            padding: '0.5rem',
-            minHeight: '0',
-            boxSizing: 'border-box'
-        });
-    }
+    Object.assign(contentArea.style, {
+        flex: '1',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'auto',
+        padding: '0.5rem',
+        minHeight: '0',
+        boxSizing: 'border-box'
+    });
 
-    const renderSections = (sections: IClearBatchSection[], targetParent: HTMLElement) => {
+    function renderSections(sections: IClearBatchSection[], targetParent: HTMLElement) {
         sections.forEach(sec => {
-            const secContainer = document.createElement('fieldset');
-            secContainer.className = 'xp-groupbox';
-            Object.assign(secContainer.style, {
-                marginBottom: '0.625rem',
-                padding: '0.625rem',
-                border: '1px solid #d0ccbf',
-                borderRadius: '0.25rem',
-                background: '#ece9d8'
-            });
+            const hasOnlyCardsOrExtraX = sec.fields.every(f => f.type === 'cards' || f.type === 'orderedData' || f.type === 'extrax' || f.type === 'search');
+            let secContainer: HTMLElement;
+            if (isExtraX && hasOnlyCardsOrExtraX) {
+                secContainer = document.createElement('div');
+                secContainer.style.width = '100%';
+                secContainer.style.height = '100%';
+                secContainer.style.display = 'flex';
+                secContainer.style.flexDirection = 'column';
+                secContainer.style.flex = '1';
+                secContainer.style.minHeight = '0';
+            } else {
+                secContainer = document.createElement('fieldset');
+                secContainer.className = 'xp-groupbox';
+                Object.assign(secContainer.style, {
+                    marginBottom: '0.625rem',
+                    padding: '0.625rem',
+                    border: '1px solid #d0ccbf',
+                    borderRadius: '0.25rem',
+                    background: '#ece9d8'
+                });
 
-            const legend = document.createElement('legend');
-            legend.innerText = sec.title;
-            legend.style.padding = '0 0.375rem';
-            legend.style.fontWeight = 'bold';
-            secContainer.appendChild(legend);
+                const legend = document.createElement('legend');
+                legend.innerText = sec.title;
+                legend.style.padding = '0 0.375rem';
+                legend.style.fontWeight = 'bold';
+                secContainer.appendChild(legend);
+            }
 
             sec.fields.forEach(field => {
+                const isExpandableType = field.type === 'cards' || field.type === 'orderedData' || field.type === 'extrax' || field.type === 'logArea' || field.type === 'tree';
                 const row = document.createElement('div');
                 Object.assign(row.style, {
                     display: 'flex',
-                    flexDirection: field.type === 'logArea' || field.type === 'tree' ? 'column' : 'row',
-                    alignItems: field.type === 'logArea' || field.type === 'tree' ? 'stretch' : 'center',
+                    flexDirection: isExpandableType ? 'column' : 'row',
+                    alignItems: isExpandableType ? 'stretch' : 'center',
                     gap: '0.5rem',
-                    marginBottom: '0.5rem'
+                    marginBottom: '0.5rem',
+                    flex: isExpandableType ? '1' : 'none',
+                    minHeight: isExpandableType ? '0' : 'auto'
                 });
 
                 if (field.label) {
@@ -1110,6 +1057,7 @@ export function renderClearBatchApp(
                             description: c.description,
                             icon: c.icon,
                             badge: c.badge,
+                            category: c.category,
                             subtasks: (c.subtasks || []).map(st => ({
                                 label: st.label,
                                 action: () => runAction(st.action)
@@ -1132,16 +1080,21 @@ export function renderClearBatchApp(
                             title: field.label,
                             items: orderedItems,
                             categories: orderedCategories,
-                            viewMode: field.viewMode || (orderedCategories.length > 0 ? 'categories' : 'tiles'),
+                            viewMode: field.viewMode || (orderedCategories.length > 0 ? 'categories' : ((state['viewMode'] as ExtraXViewMode) || 'tiles')),
                             enableSearch: field.searchable !== false,
                             searchPlaceholder: field.placeholder || 'Filter items...',
                             onItemAction: (item) => {
                                 if (typeof item.action === 'function') item.action();
+                            },
+                            onCategoryAction: (cat) => {
+                                const matched = rawCards.find(c => c.id === cat.id);
+                                if (matched?.action) runAction(matched.action);
                             }
                         });
                         manager.id = field.id;
                         manager.style.width = '100%';
-                        manager.style.minHeight = '18rem';
+                        manager.style.height = '100%';
+                        manager.style.flex = '1';
                         row.appendChild(manager);
                         break;
                     }
@@ -1162,12 +1115,17 @@ export function renderClearBatchApp(
                             const query = searchInput.value.toLowerCase().trim();
                             state[field.id] = query;
                             if (field.filterTarget) {
-                                const targetEl = rootContainer.querySelector(`#${field.filterTarget}`) || rootContainer.querySelector(`.${field.filterTarget}`);
+                                const targetEl = document.getElementById(field.filterTarget) || rootContainer.querySelector(`#${field.filterTarget}`) || rootContainer.querySelector(`.${field.filterTarget}`);
                                 if (targetEl) {
-                                    Array.from(targetEl.children).forEach(child => {
-                                        const text = (child as HTMLElement).innerText.toLowerCase();
-                                        (child as HTMLElement).style.display = (!query || text.includes(query)) ? '' : 'none';
-                                    });
+                                    const searchFn = (targetEl as unknown as { setSearchQuery?: (q: string) => void }).setSearchQuery;
+                                    if (typeof searchFn === 'function') {
+                                        searchFn(query);
+                                    } else {
+                                        Array.from(targetEl.children).forEach(child => {
+                                            const text = (child as HTMLElement).innerText.toLowerCase();
+                                            (child as HTMLElement).style.display = (!query || text.includes(query)) ? '' : 'none';
+                                        });
+                                    }
                                 }
                             }
                         };
@@ -1226,96 +1184,49 @@ export function renderClearBatchApp(
 
     // Render TabControl or Direct Sections
     if (appDef.tabs && appDef.tabs.length > 0) {
-        if (isExtraX) {
-            // NO TAB CONTROLS IN ExtraX!
-            // View modes and tabs are switched purely via sidebar links and shell selectors.
-            let currentTabId = (state['activeTab'] as string) || appDef.tabs[0].id;
-            const tabPanels: Record<string, HTMLElement> = {};
-
-            appDef.tabs.forEach(tab => {
-                const tabWrap = document.createElement('div');
-                Object.assign(tabWrap.style, {
-                    width: '100%',
-                    height: '100%',
-                    display: tab.id === currentTabId ? 'flex' : 'none',
-                    flexDirection: 'column',
-                    overflow: 'auto',
-                    boxSizing: 'border-box'
-                });
-
-                renderSections(tab.sections, tabWrap);
-
-                if (tab.actions && tab.actions.length > 0) {
-                    const actRow = document.createElement('div');
-                    actRow.className = 'xp-dialog-actions';
-                    actRow.style.marginTop = 'auto';
-                    tab.actions.forEach(a => {
-                        const btn = document.createElement('button');
-                        btn.className = `xp-button ${a.isDefault ? 'xp-btn-default' : ''}`;
-                        btn.innerText = a.text;
-                        btn.onclick = () => runAction(a.action);
-                        actRow.appendChild(btn);
-                    });
-                    tabWrap.appendChild(actRow);
-                }
-
-                contentArea.appendChild(tabWrap);
-                tabPanels[tab.id] = tabWrap;
+        const tabItems = appDef.tabs.map(tab => {
+            const tabWrap = document.createElement('div');
+            Object.assign(tabWrap.style, {
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'auto',
+                boxSizing: 'border-box'
             });
 
-            activeTabControl = {
-                setActiveTab: (tabId: string) => {
-                    currentTabId = tabId;
-                    Object.entries(tabPanels).forEach(([tid, el]) => {
-                        el.style.display = tid === tabId ? 'flex' : 'none';
-                    });
-                }
+            renderSections(tab.sections, tabWrap);
+
+            // Tab-specific actions if any
+            if (tab.actions && tab.actions.length > 0) {
+                const actRow = document.createElement('div');
+                actRow.className = 'xp-dialog-actions';
+                actRow.style.marginTop = 'auto';
+                tab.actions.forEach(a => {
+                    const btn = document.createElement('button');
+                    btn.className = `xp-button ${a.isDefault ? 'xp-btn-default' : ''}`;
+                    btn.innerText = a.text;
+                    btn.onclick = () => runAction(a.action);
+                    actRow.appendChild(btn);
+                });
+                tabWrap.appendChild(actRow);
+            }
+
+            return {
+                id: tab.id,
+                title: tab.title,
+                disabled: tab.disabled,
+                content: tabWrap
             };
-        } else {
-            const tabItems = appDef.tabs.map(tab => {
-                const tabWrap = document.createElement('div');
-                Object.assign(tabWrap.style, {
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'auto',
-                    boxSizing: 'border-box'
-                });
+        });
 
-                renderSections(tab.sections, tabWrap);
-
-                // Tab-specific actions if any
-                if (tab.actions && tab.actions.length > 0) {
-                    const actRow = document.createElement('div');
-                    actRow.className = 'xp-dialog-actions';
-                    actRow.style.marginTop = 'auto';
-                    tab.actions.forEach(a => {
-                        const btn = document.createElement('button');
-                        btn.className = `xp-button ${a.isDefault ? 'xp-btn-default' : ''}`;
-                        btn.innerText = a.text;
-                        btn.onclick = () => runAction(a.action);
-                        actRow.appendChild(btn);
-                    });
-                    tabWrap.appendChild(actRow);
-                }
-
-                return {
-                    id: tab.id,
-                    title: tab.title,
-                    disabled: tab.disabled,
-                    content: tabWrap
-                };
-            });
-
-            const tabControl = fccf.Controls.TabControl({ tabs: tabItems });
-            activeTabControl = tabControl;
-            contentArea.appendChild(tabControl.el);
-        }
+        const tabControl = fccf.Controls.TabControl({ tabs: tabItems });
+        activeTabControl = tabControl;
+        contentArea.appendChild(tabControl.el);
     } else if (appDef.sections) {
         renderSections(appDef.sections, contentArea);
     }
 
-    contentTargetParent.appendChild(contentArea);
+    rootContainer.appendChild(contentArea);
 
     // 3. Status Bar if defined
     if (appDef.statusBar && appDef.statusBar.panels) {

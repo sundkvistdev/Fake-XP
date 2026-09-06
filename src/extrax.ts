@@ -1,8 +1,8 @@
-import { IKernel, IFCCF, IVirtualFileSystem } from './types';
+import { IKernel, IFCCF, IVirtualFileSystem, MenuItem, MenuStripItem } from './types';
 import systemInfo from './data/systemInfo.json';
 import extraxConfig from './data/extraxConfig.json';
 
-export type ExtraXViewMode = 'categories' | 'icons' | 'tiles' | 'details' | 'list';
+export type ExtraXViewMode = 'thumbnails' | 'tiles' | 'icons' | 'list' | 'details' | 'categories';
 
 export interface ExtraXTaskItem {
     id: string;
@@ -71,99 +71,349 @@ export interface ExtraXOrderedDataOptions {
     onViewModeChange?: (mode: ExtraXViewMode) => void;
 }
 
+export type ExtraXShellMode = 'window' | 'desktop' | 'fullscreen';
+
 export interface ExtraXShellOptions {
     title: string;
     icon?: string;
     currentPath?: string;
+    mode?: ExtraXShellMode;
+    fullscreen?: boolean;
+    backgroundImage?: string;
     viewMode?: ExtraXViewMode;
     supportedViewModes?: ExtraXViewMode[];
     expandos?: ExtraXExpandoSection[];
+    menuItems?: MenuStripItem[];
+    fccf?: IFCCF;
+    kernel?: IKernel;
     onNavigate?: (path: string) => void;
     onViewModeChange?: (mode: ExtraXViewMode) => void;
+}
+
+export interface ExtraXDesktopOptions {
+    container?: HTMLElement;
+    backgroundImage?: string;
+    kernel?: IKernel;
+    vfs?: IVirtualFileSystem;
+    fccf?: IFCCF;
+    desktopPath?: string;
+    onItemClick?: (path: string, item: string) => void;
+    onDesktopContextMenu?: (e: MouseEvent) => void;
+}
+
+export interface ExtraXDesktopInstance {
+    container: HTMLElement;
+    iconsContainer: HTMLElement;
+    render: () => void;
+    setWallpaper: (url: string) => void;
 }
 
 /**
  * ExtraX Component System: Modular, graphical Windows XP shell component architecture
  */
+export interface ExtraXShellInstance {
+    container: HTMLElement;
+    taskPane: HTMLElement;
+    contentArea: HTMLElement;
+    menuStrip: HTMLElement;
+    toolbar: HTMLElement;
+    addressBar: HTMLElement;
+    statusBar: HTMLElement;
+    setViewMode: (mode: ExtraXViewMode) => void;
+    setAddress: (addr: string) => void;
+    setStatusText: (text: string, panelIndex?: number) => void;
+}
+
 export class ExtraX {
-    public static createShell(options: ExtraXShellOptions): {
-        container: HTMLElement;
-        taskPane: HTMLElement;
-        contentArea: HTMLElement;
-        setViewMode: (mode: ExtraXViewMode) => void;
-        setAddress: (addr: string) => void;
-    } {
+    public static createShell(options: ExtraXShellOptions): ExtraXShellInstance {
         const container = document.createElement('div');
         container.className = 'extrax-shell';
 
-        // Navigation Toolbar
-        const navBar = document.createElement('div');
-        navBar.className = 'extrax-nav-bar';
+        if (options.fullscreen || options.mode === 'fullscreen' || options.mode === 'desktop') {
+            container.classList.add('extrax-fullscreen');
+            if (options.mode === 'desktop') {
+                container.classList.add('extrax-desktop');
+            }
+        }
+        if (options.backgroundImage) {
+            container.style.backgroundImage = `url(${options.backgroundImage})`;
+            container.style.backgroundSize = 'cover';
+            container.style.backgroundPosition = 'center';
+            container.style.backgroundRepeat = 'no-repeat';
+        }
 
-        const backBtn = document.createElement('button');
-        backBtn.className = 'extrax-nav-btn';
-        backBtn.innerText = extraxConfig.strings.back;
-        navBar.appendChild(backBtn);
+        const fccf = options.fccf || (typeof window !== 'undefined' ? window.FCCF : undefined);
+        const kernel = options.kernel || (typeof window !== 'undefined' ? window.XP_API : undefined);
 
-        const fwdBtn = document.createElement('button');
-        fwdBtn.className = 'extrax-nav-btn';
-        fwdBtn.innerText = extraxConfig.strings.forward;
-        fwdBtn.disabled = true;
-        navBar.appendChild(fwdBtn);
+        const viewModes: { id: ExtraXViewMode; label: string }[] = [
+            { id: 'thumbnails', label: extraxConfig.viewModes[0].label },
+            { id: 'tiles', label: extraxConfig.viewModes[1].label },
+            { id: 'icons', label: extraxConfig.viewModes[2].label },
+            { id: 'list', label: extraxConfig.viewModes[3].label },
+            { id: 'details', label: extraxConfig.viewModes[4].label }
+        ];
 
-        const upBtn = document.createElement('button');
-        upBtn.className = 'extrax-nav-btn';
-        upBtn.innerText = extraxConfig.strings.up;
-        navBar.appendChild(upBtn);
+        let currentMode: ExtraXViewMode = options.viewMode || 'tiles';
 
-        // View Mode Switcher
-        const viewModeSelect = document.createElement('select');
-        viewModeSelect.className = 'extrax-nav-btn';
-        viewModeSelect.style.marginLeft = 'auto';
-        viewModeSelect.style.background = '#ffffff';
-        viewModeSelect.style.border = '1px solid #7f9db9';
+        // Synchronized radio menu items for Toolbar views dropdown
+        const toolbarViewRadioItems: MenuItem[] = viewModes.map(vm => ({
+            text: vm.label,
+            radio: true,
+            radioGroup: 'extrax_view_mode',
+            checked: vm.id === currentMode,
+            action: () => setViewMode(vm.id)
+        }));
 
-        const viewModes = extraxConfig.viewModes as { id: ExtraXViewMode; label: string }[];
+        // Synchronized radio menu items for MenuStrip "View" menu
+        const menuViewRadioItems: MenuItem[] = viewModes.map(vm => ({
+            text: vm.label,
+            radio: true,
+            radioGroup: 'extrax_view_mode',
+            checked: vm.id === currentMode,
+            action: () => setViewMode(vm.id)
+        }));
 
-        viewModes.forEach(vm => {
-            const opt = document.createElement('option');
-            opt.value = vm.id;
-            opt.innerText = vm.label;
-            if (vm.id === (options.viewMode || 'categories')) opt.selected = true;
-            viewModeSelect.appendChild(opt);
-        });
+        const setViewMode = (mode: ExtraXViewMode) => {
+            if (currentMode === mode) return;
+            currentMode = mode;
+            toolbarViewRadioItems.forEach(item => {
+                const targetVm = viewModes.find(vm => vm.id === mode);
+                item.checked = item.text === targetVm?.label;
+            });
+            menuViewRadioItems.forEach(item => {
+                const targetVm = viewModes.find(vm => vm.id === mode);
+                item.checked = item.text === targetVm?.label;
+            });
 
-        navBar.appendChild(viewModeSelect);
-        container.appendChild(navBar);
+            const managers = contentArea.querySelectorAll<HTMLElement & { setViewMode?: (m: ExtraXViewMode) => void }>('*');
+            managers.forEach(el => {
+                if (typeof el.setViewMode === 'function') {
+                    try {
+                        el.setViewMode(mode);
+                    } catch {}
+                }
+            });
 
-        // Address Bar
+            if (options.onViewModeChange) {
+                options.onViewModeChange(mode);
+            }
+        };
+
+        // 1. Menu Strip (first)
+        const defaultMenuItems: MenuStripItem[] = [
+            {
+                text: extraxConfig.strings.file,
+                menu: [
+                    {
+                        text: 'Close',
+                        action: () => {
+                            // Find and close window if available
+                            const winEl = container.closest('.window');
+                            if (winEl && kernel) {
+                                const id = winEl.id;
+                                if (id) kernel.closeWindow(id);
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                text: extraxConfig.strings.edit,
+                menu: [
+                    { text: 'Cut', shortcut: 'Ctrl+X' },
+                    { text: 'Copy', shortcut: 'Ctrl+C' },
+                    { text: 'Paste', shortcut: 'Ctrl+V' },
+                    { separator: true },
+                    { text: 'Select All', shortcut: 'Ctrl+A' }
+                ]
+            },
+            {
+                text: extraxConfig.strings.view,
+                menu: [
+                    {
+                        text: extraxConfig.strings.toolbars,
+                        menu: [
+                            { text: extraxConfig.strings.standardButtons, checked: true },
+                            { text: extraxConfig.strings.addressBar, checked: true }
+                        ]
+                    },
+                    { text: extraxConfig.strings.statusBar, checked: true },
+                    { separator: true },
+                    ...menuViewRadioItems,
+                    { separator: true },
+                    {
+                        text: extraxConfig.strings.refresh,
+                        shortcut: 'F5',
+                        action: () => {
+                            if (options.onViewModeChange) options.onViewModeChange(currentMode);
+                        }
+                    }
+                ]
+            },
+            {
+                text: extraxConfig.strings.favorites,
+                menu: [
+                    {
+                        text: extraxConfig.strings.computer,
+                        action: () => {
+                            if (options.onNavigate) options.onNavigate('C:');
+                        }
+                    }
+                ]
+            },
+            {
+                text: extraxConfig.strings.tools,
+                menu: [
+                    {
+                        text: 'Folder Options...',
+                        action: () => {
+                            if (kernel) {
+                                kernel.showDialog({
+                                    title: 'Folder Options',
+                                    message: 'Tasks: Show common tasks in folders\nBrowse: Open each folder in the same window',
+                                    type: 'info'
+                                });
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                text: extraxConfig.strings.help,
+                menu: [
+                    {
+                        text: 'About FXP OS',
+                        action: () => {
+                            if (kernel) {
+                                kernel.showAboutDialog(options.title);
+                            }
+                        }
+                    }
+                ]
+            }
+        ];
+
+        let menuStripEl: HTMLElement;
+        if (fccf) {
+            const msComp = fccf.Controls.MenuStrip({ items: options.menuItems || defaultMenuItems });
+            menuStripEl = (msComp as unknown as { el: HTMLElement }).el || (msComp as unknown as HTMLElement);
+        } else {
+            menuStripEl = document.createElement('div');
+            menuStripEl.className = 'fccf-menustrip';
+            (options.menuItems || defaultMenuItems).forEach(item => {
+                const btn = document.createElement('div');
+                btn.className = 'fccf-menu-item';
+                btn.innerText = item.text || '';
+                menuStripEl.appendChild(btn);
+            });
+        }
+        container.appendChild(menuStripEl);
+
+        // 2. Tool Strip (second)
+        let toolbarEl: HTMLElement;
+        if (fccf) {
+            const tbComp = fccf.Controls.Toolbar({
+                items: [
+                    {
+                        id: 'back',
+                        text: extraxConfig.strings.back,
+                        icon: extraxConfig.icons.back,
+                        disabled: true,
+                        onClick: () => {}
+                    },
+                    {
+                        id: 'forward',
+                        text: extraxConfig.strings.forward,
+                        icon: extraxConfig.icons.forward,
+                        disabled: true,
+                        onClick: () => {}
+                    },
+                    {
+                        id: 'up',
+                        text: extraxConfig.strings.up,
+                        icon: extraxConfig.icons.up,
+                        onClick: () => {
+                            if (options.onNavigate) options.onNavigate('..');
+                        }
+                    },
+                    { separator: true },
+                    {
+                        id: 'search',
+                        text: extraxConfig.strings.search,
+                        icon: extraxConfig.icons.search,
+                        onClick: () => {
+                            const searchInput = contentArea.querySelector('.extrax-web-search') as HTMLInputElement | null;
+                            if (searchInput) {
+                                searchInput.focus();
+                                searchInput.select();
+                            }
+                        }
+                    },
+                    {
+                        id: 'folders',
+                        text: extraxConfig.strings.folders,
+                        icon: extraxConfig.icons.folders,
+                        onClick: () => {
+                            taskPane.style.display = taskPane.style.display === 'none' ? 'flex' : 'none';
+                            splitterEl.style.display = taskPane.style.display;
+                        }
+                    },
+                    { separator: true },
+                    {
+                        id: 'views',
+                        text: extraxConfig.strings.views,
+                        icon: extraxConfig.icons.views,
+                        dropdown: true,
+                        menu: toolbarViewRadioItems
+                    }
+                ]
+            });
+            toolbarEl = (tbComp as unknown as { el: HTMLElement }).el || (tbComp as unknown as HTMLElement);
+        } else {
+            toolbarEl = document.createElement('div');
+            toolbarEl.className = 'xp-toolbar';
+        }
+        container.appendChild(toolbarEl);
+
+        // 3. Address Strip (third)
         const addressBar = document.createElement('div');
         addressBar.className = 'extrax-address-bar';
 
         const addrLabel = document.createElement('span');
         addrLabel.innerText = extraxConfig.strings.address;
-        addrLabel.style.color = '#555';
+        addrLabel.style.color = '#555555';
+        addrLabel.style.fontSize = '11px';
         addressBar.appendChild(addrLabel);
 
         const addrInput = document.createElement('input');
-        addrInput.className = 'extrax-address-input';
+        addrInput.className = 'fccf-input extrax-address-input';
         addrInput.value = options.currentPath || options.title;
+        addrInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                if (options.onNavigate) options.onNavigate(addrInput.value);
+            }
+        };
         addressBar.appendChild(addrInput);
 
         const goBtn = document.createElement('button');
         goBtn.className = 'extrax-nav-btn';
         goBtn.innerText = extraxConfig.strings.go;
+        goBtn.onclick = () => {
+            if (options.onNavigate) options.onNavigate(addrInput.value);
+        };
         addressBar.appendChild(goBtn);
-
         container.appendChild(addressBar);
 
-        // Main Shell Body
+        // 4. Content Area (fourth)
         const body = document.createElement('div');
         body.className = 'extrax-body';
 
-        // Left Task Pane (Classic XP Blue Expando Panel)
+        // 1. Sidebar with collapsible logical link groups
         const taskPane = document.createElement('div');
         taskPane.className = 'extrax-taskpane';
+        taskPane.style.width = '13.5rem';
+        taskPane.style.flexShrink = '0';
+        taskPane.style.overflowY = 'auto';
 
         if (options.expandos) {
             options.expandos.forEach(exp => {
@@ -173,29 +423,73 @@ export class ExtraX {
         }
         body.appendChild(taskPane);
 
-        // Right Content Area
+        // Resizable Splitter between Sidebar and Main Viewport
+        let splitterEl: HTMLElement;
+        if (fccf) {
+            const splitterComp = fccf.Controls.Splitter({
+                vertical: true,
+                onResize: (delta) => {
+                    const curW = parseInt(taskPane.style.width, 10) || 216;
+                    taskPane.style.width = `${Math.max(100, Math.min(380, curW + delta))}px`;
+                }
+            });
+            splitterEl = (splitterComp as unknown as { el: HTMLElement }).el || (splitterComp as unknown as HTMLElement);
+        } else {
+            splitterEl = document.createElement('div');
+            splitterEl.className = 'fccf-splitter vertical';
+            splitterEl.style.width = '4px';
+        }
+        body.appendChild(splitterEl);
+
+        // 2. Main viewport for ExtraX
         const contentArea = document.createElement('div');
         contentArea.className = 'extrax-content';
         body.appendChild(contentArea);
-
         container.appendChild(body);
 
-        // View Mode Change Event
-        viewModeSelect.onchange = () => {
-            const mode = viewModeSelect.value as ExtraXViewMode;
-            if (options.onViewModeChange) options.onViewModeChange(mode);
-        };
+        // 5. Status Strip (fifth, last)
+        let statusBarEl: HTMLElement;
+        let setStatusText: (text: string, panelIndex?: number) => void;
+
+        if (fccf) {
+            const statusBarComp = fccf.Controls.StatusBar({
+                panels: [
+                    { text: `0 ${extraxConfig.strings.objects}`, flexGrow: true },
+                    { text: extraxConfig.strings.ready, width: '6.25rem' },
+                    { text: extraxConfig.strings.computer, width: '7.5rem', icon: extraxConfig.icons.computer }
+                ]
+            });
+            statusBarEl = (statusBarComp as unknown as { el: HTMLElement }).el || (statusBarComp as unknown as HTMLElement);
+            setStatusText = (text: string, panelIndex: number = 0) => {
+                statusBarComp.setPanelText(panelIndex, text);
+            };
+        } else {
+            statusBarEl = document.createElement('div');
+            statusBarEl.className = 'xp-statusbar';
+            const panel0 = document.createElement('div');
+            panel0.className = 'xp-status-panel';
+            panel0.style.flexGrow = '1';
+            panel0.innerText = `0 ${extraxConfig.strings.objects}`;
+            statusBarEl.appendChild(panel0);
+            setStatusText = (text: string, panelIndex: number = 0) => {
+                if (panelIndex === 0) panel0.innerText = text;
+            };
+        }
+        container.appendChild(statusBarEl);
 
         return {
             container,
             taskPane,
             contentArea,
-            setViewMode: (mode: ExtraXViewMode) => {
-                viewModeSelect.value = mode;
-            },
+            menuStrip: menuStripEl,
+            toolbar: toolbarEl,
+            addressBar,
+            statusBar: statusBarEl,
+            setViewMode,
             setAddress: (addr: string) => {
                 addrInput.value = addr;
-            }
+            },
+            setStatusText
         };
     }
 
@@ -249,10 +543,14 @@ export class ExtraX {
             root.appendChild(webBar);
         }
 
-        // Expose programmatic view mode setter for the shell
-        (root as unknown as { setViewMode: (mode: ExtraXViewMode) => void }).setViewMode = (mode: ExtraXViewMode) => {
+        // Expose programmatic view mode setter and search filter for the shell
+        (root as unknown as { setViewMode: (mode: ExtraXViewMode) => void; setSearchQuery: (q: string) => void }).setViewMode = (mode: ExtraXViewMode) => {
+            if (currentMode === mode) return;
             currentMode = mode;
-            if (options.onViewModeChange) options.onViewModeChange(currentMode);
+            renderView();
+        };
+        (root as unknown as { setSearchQuery: (q: string) => void }).setSearchQuery = (q: string) => {
+            currentFilter = q.toLowerCase().trim();
             renderView();
         };
 
@@ -260,6 +558,9 @@ export class ExtraX {
         const scrollContainer = document.createElement('div');
         scrollContainer.className = 'extrax-ordered-scroll';
         root.appendChild(scrollContainer);
+
+        let sortColumn: 'name' | 'category' | 'description' | null = null;
+        let sortDirection: 'asc' | 'desc' = 'asc';
 
         const renderView = () => {
             scrollContainer.innerHTML = '';
@@ -285,7 +586,7 @@ export class ExtraX {
                 return;
             }
 
-            // Categories View
+            // Categories View (when applicable)
             if (currentMode === 'categories' && options.categories && options.categories.length > 0 && !searchQuery) {
                 const catGrid = document.createElement('div');
                 catGrid.className = 'extrax-categories-grid';
@@ -354,7 +655,46 @@ export class ExtraX {
                 return;
             }
 
-            // Tiles View
+            // 1. Thumbnails View (largest icons)
+            if (currentMode === 'thumbnails') {
+                const grid = document.createElement('div');
+                grid.className = 'extrax-thumbnails-grid';
+
+                filteredItems.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'extrax-thumbnail-item';
+                    itemEl.tabIndex = 0;
+
+                    const frame = document.createElement('div');
+                    frame.className = 'extrax-thumbnail-frame';
+
+                    if (item.icon) {
+                        const img = document.createElement('img');
+                        img.src = item.icon;
+                        frame.appendChild(img);
+                    }
+                    itemEl.appendChild(frame);
+
+                    const title = document.createElement('div');
+                    title.className = 'extrax-thumbnail-title';
+                    title.innerText = item.title;
+                    itemEl.appendChild(title);
+
+                    itemEl.onclick = () => {
+                        grid.querySelectorAll('.extrax-thumbnail-item').forEach(el => el.classList.remove('selected'));
+                        itemEl.classList.add('selected');
+                        if (typeof item.action === 'function') item.action();
+                        if (options.onItemAction) options.onItemAction(item);
+                    };
+
+                    grid.appendChild(itemEl);
+                });
+
+                scrollContainer.appendChild(grid);
+                return;
+            }
+
+            // 2. Tiles View (larger icons)
             if (currentMode === 'tiles') {
                 const grid = document.createElement('div');
                 grid.className = 'extrax-tiles-grid';
@@ -362,12 +702,13 @@ export class ExtraX {
                 filteredItems.forEach(item => {
                     const tile = document.createElement('div');
                     tile.className = 'extrax-tile-item';
+                    tile.tabIndex = 0;
 
                     if (item.icon) {
                         const icon = document.createElement('img');
                         icon.src = item.icon;
-                        icon.style.width = '2rem';
-                        icon.style.height = '2rem';
+                        icon.style.width = '2.25rem';
+                        icon.style.height = '2.25rem';
                         icon.style.objectFit = 'contain';
                         icon.style.flexShrink = '0';
                         tile.appendChild(icon);
@@ -407,6 +748,8 @@ export class ExtraX {
 
                     tile.appendChild(info);
                     tile.onclick = () => {
+                        grid.querySelectorAll('.extrax-tile-item').forEach(el => el.classList.remove('selected'));
+                        tile.classList.add('selected');
                         if (typeof item.action === 'function') item.action();
                         if (options.onItemAction) options.onItemAction(item);
                     };
@@ -418,7 +761,7 @@ export class ExtraX {
                 return;
             }
 
-            // Icons View
+            // 3. Icons View (regular)
             if (currentMode === 'icons') {
                 const grid = document.createElement('div');
                 grid.className = 'extrax-icons-grid';
@@ -426,6 +769,7 @@ export class ExtraX {
                 filteredItems.forEach(item => {
                     const iconItem = document.createElement('div');
                     iconItem.className = 'extrax-applet-item';
+                    iconItem.tabIndex = 0;
 
                     if (item.icon) {
                         const icon = document.createElement('img');
@@ -444,6 +788,8 @@ export class ExtraX {
                     iconItem.appendChild(label);
 
                     iconItem.onclick = () => {
+                        grid.querySelectorAll('.extrax-applet-item').forEach(el => el.classList.remove('selected'));
+                        iconItem.classList.add('selected');
                         if (typeof item.action === 'function') item.action();
                         if (options.onItemAction) options.onItemAction(item);
                     };
@@ -455,8 +801,64 @@ export class ExtraX {
                 return;
             }
 
-            // Details View (Web Table - High Contrast)
+            // 4. List View (compact)
+            if (currentMode === 'list') {
+                const grid = document.createElement('div');
+                grid.className = 'extrax-list-grid';
+
+                filteredItems.forEach(item => {
+                    const itemEl = document.createElement('div');
+                    itemEl.className = 'extrax-list-item';
+                    itemEl.tabIndex = 0;
+
+                    if (item.icon) {
+                        const img = document.createElement('img');
+                        img.src = item.icon;
+                        itemEl.appendChild(img);
+                    }
+
+                    const title = document.createElement('span');
+                    title.className = 'extrax-list-title';
+                    title.innerText = item.title;
+                    itemEl.appendChild(title);
+
+                    itemEl.onclick = () => {
+                        grid.querySelectorAll('.extrax-list-item').forEach(el => el.classList.remove('selected'));
+                        itemEl.classList.add('selected');
+                        if (typeof item.action === 'function') item.action();
+                        if (options.onItemAction) options.onItemAction(item);
+                    };
+
+                    grid.appendChild(itemEl);
+                });
+
+                scrollContainer.appendChild(grid);
+                return;
+            }
+
+            // 5. Details View (headers, orderable)
             if (currentMode === 'details') {
+                const sortedItems = [...filteredItems];
+                if (sortColumn) {
+                    sortedItems.sort((a, b) => {
+                        let valA = '';
+                        let valB = '';
+                        if (sortColumn === 'name') {
+                            valA = a.title.toLowerCase();
+                            valB = b.title.toLowerCase();
+                        } else if (sortColumn === 'category') {
+                            valA = (a.category || a.badge || '').toLowerCase();
+                            valB = (b.category || b.badge || '').toLowerCase();
+                        } else if (sortColumn === 'description') {
+                            valA = (a.description || '').toLowerCase();
+                            valB = (b.description || '').toLowerCase();
+                        }
+                        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+                }
+
                 const tableWrapper = document.createElement('div');
                 tableWrapper.className = 'extrax-table-wrapper';
 
@@ -467,15 +869,64 @@ export class ExtraX {
                 thead.innerHTML = `
                     <tr>
                         <th style="width: 2rem;"></th>
-                        <th style="width: 30%;">Name</th>
-                        <th style="width: 20%;">Category / Info</th>
-                        <th>Description</th>
+                        <th id="extrax-th-name" class="sortable" style="width: 30%;">
+                            ${extraxConfig.strings.name}
+                            <span class="sort-arrow">${sortColumn === 'name' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}</span>
+                        </th>
+                        <th id="extrax-th-category" class="sortable" style="width: 25%;">
+                            ${extraxConfig.strings.category}
+                            <span class="sort-arrow">${sortColumn === 'category' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}</span>
+                        </th>
+                        <th id="extrax-th-desc" class="sortable">
+                            ${extraxConfig.strings.description}
+                            <span class="sort-arrow">${sortColumn === 'description' ? (sortDirection === 'asc' ? '▲' : '▼') : ''}</span>
+                        </th>
                     </tr>
                 `;
+
+                const thName = thead.querySelector('#extrax-th-name') as HTMLElement;
+                if (thName) {
+                    thName.onclick = () => {
+                        if (sortColumn === 'name') {
+                            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            sortColumn = 'name';
+                            sortDirection = 'asc';
+                        }
+                        renderView();
+                    };
+                }
+
+                const thCat = thead.querySelector('#extrax-th-category') as HTMLElement;
+                if (thCat) {
+                    thCat.onclick = () => {
+                        if (sortColumn === 'category') {
+                            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            sortColumn = 'category';
+                            sortDirection = 'asc';
+                        }
+                        renderView();
+                    };
+                }
+
+                const thDesc = thead.querySelector('#extrax-th-desc') as HTMLElement;
+                if (thDesc) {
+                    thDesc.onclick = () => {
+                        if (sortColumn === 'description') {
+                            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                        } else {
+                            sortColumn = 'description';
+                            sortDirection = 'asc';
+                        }
+                        renderView();
+                    };
+                }
+
                 table.appendChild(thead);
 
                 const tbody = document.createElement('tbody');
-                filteredItems.forEach(item => {
+                sortedItems.forEach(item => {
                     const tr = document.createElement('tr');
                     tr.style.cursor = 'pointer';
 
@@ -518,53 +969,6 @@ export class ExtraX {
                 tableWrapper.appendChild(table);
                 scrollContainer.appendChild(tableWrapper);
                 return;
-            }
-
-            // List View
-            if (currentMode === 'list') {
-                const listContainer = document.createElement('div');
-                listContainer.style.display = 'flex';
-                listContainer.style.flexDirection = 'column';
-                listContainer.style.gap = '0.25rem';
-
-                filteredItems.forEach(item => {
-                    const row = document.createElement('div');
-                    row.className = 'extrax-tile-item';
-                    row.style.padding = '0.375rem 0.5rem';
-
-                    if (item.icon) {
-                        const img = document.createElement('img');
-                        img.src = item.icon;
-                        img.style.width = '1.25rem';
-                        img.style.height = '1.25rem';
-                        img.style.objectFit = 'contain';
-                        row.appendChild(img);
-                    }
-
-                    const title = document.createElement('span');
-                    title.style.fontWeight = 'bold';
-                    title.style.fontSize = '12px';
-                    title.innerText = item.title;
-                    row.appendChild(title);
-
-                    if (item.description) {
-                        const desc = document.createElement('span');
-                        desc.style.color = '#333333';
-                        desc.style.fontSize = '11px';
-                        desc.style.marginLeft = '0.5rem';
-                        desc.innerText = `- ${item.description}`;
-                        row.appendChild(desc);
-                    }
-
-                    row.onclick = () => {
-                        if (typeof item.action === 'function') item.action();
-                        if (options.onItemAction) options.onItemAction(item);
-                    };
-
-                    listContainer.appendChild(row);
-                });
-
-                scrollContainer.appendChild(listContainer);
             }
         };
 
@@ -791,5 +1195,174 @@ export class ExtraX {
         };
 
         return nodeRow;
+    }
+
+    /**
+     * ExtraX Desktop Mode: Fullscreen wallpaper environment with zero scrollbars and XP-style icon layout
+     */
+    public static createDesktop(options: ExtraXDesktopOptions): ExtraXDesktopInstance {
+        const targetContainer = options.container || document.getElementById('desktop') || document.createElement('div');
+        if (!targetContainer.id) targetContainer.id = 'desktop';
+
+        targetContainer.classList.add('extrax-fullscreen', 'extrax-desktop');
+        targetContainer.style.overflow = 'hidden';
+        targetContainer.style.width = '100vw';
+        targetContainer.style.height = '100vh';
+        targetContainer.style.position = 'absolute';
+        targetContainer.style.top = '0';
+        targetContainer.style.left = '0';
+
+        const wallpaper = options.backgroundImage || (options.kernel?.getSCT()?.Wallpaper as string) || 'https://picsum.photos/seed/bliss/1920/1080';
+        if (wallpaper) {
+            targetContainer.style.backgroundImage = `url("${wallpaper}")`;
+            targetContainer.style.backgroundSize = 'cover';
+            targetContainer.style.backgroundPosition = 'center';
+            targetContainer.style.backgroundRepeat = 'no-repeat';
+        }
+
+        let iconsContainer = targetContainer.querySelector('#desktop-icons') as HTMLElement;
+        if (!iconsContainer) {
+            iconsContainer = document.createElement('div');
+            iconsContainer.id = 'desktop-icons';
+            targetContainer.appendChild(iconsContainer);
+        }
+        iconsContainer.className = 'extrax-desktop-icons';
+        iconsContainer.style.overflow = 'hidden';
+
+        const vfsPath = options.desktopPath || 'C:/Desktop';
+
+        const render = () => {
+            iconsContainer.innerHTML = '';
+            if (!options.vfs) return;
+
+            const items = options.vfs.ls(vfsPath);
+            items.forEach(item => {
+                const fullPath = `${vfsPath}/${item}`;
+                const stat = options.vfs?.stat(fullPath);
+                const icon = options.kernel?.getIcon(fullPath) || extraxConfig.icons.defaultFolder;
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'extrax-desktop-item desktop-icon';
+
+                const img = document.createElement('img');
+                img.className = 'extrax-desktop-icon-img';
+                img.src = icon;
+                img.alt = item;
+                img.setAttribute('referrerPolicy', 'no-referrer');
+                itemEl.appendChild(img);
+
+                const span = document.createElement('span');
+                span.className = 'extrax-desktop-label';
+                span.innerText = item.replace('.lnk', '');
+                itemEl.appendChild(span);
+
+                itemEl.onclick = (e) => {
+                    e.stopPropagation();
+                    iconsContainer.querySelectorAll('.extrax-desktop-item').forEach(i => i.classList.remove('selected'));
+                    itemEl.classList.add('selected');
+                    if (options.onItemClick) {
+                        options.onItemClick(fullPath, item);
+                    } else if (options.kernel) {
+                        options.kernel.exec(fullPath);
+                    }
+                };
+
+                itemEl.oncontextmenu = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    iconsContainer.querySelectorAll('.extrax-desktop-item').forEach(i => i.classList.remove('selected'));
+                    itemEl.classList.add('selected');
+
+                    if (options.kernel) {
+                        options.kernel.showContextMenu(e.clientX, e.clientY, [
+                            { text: 'Open', action: () => options.kernel?.exec(fullPath) },
+                            { separator: true },
+                            { text: 'Cut' },
+                            { text: 'Copy' },
+                            { separator: true },
+                            {
+                                text: 'Delete',
+                                action: () => {
+                                    options.kernel?.showDialog({
+                                        type: 'confirm',
+                                        title: 'Confirm File Delete',
+                                        message: `Are you sure you want to delete '${item}'?`,
+                                        onOk: () => {
+                                            const ok = options.vfs?.delete(fullPath);
+                                            if (ok) {
+                                                render();
+                                            } else {
+                                                options.kernel?.showDialog({ title: 'Error', message: 'Unable to delete item.', type: 'error' });
+                                            }
+                                        }
+                                    });
+                                }
+                            },
+                            {
+                                text: 'Rename',
+                                action: () => {
+                                    options.kernel?.showDialog({
+                                        type: 'prompt',
+                                        title: 'Rename',
+                                        message: `Enter new name for '${item}':`,
+                                        value: item,
+                                        onOk: (newName) => {
+                                            if (typeof newName === 'string' && newName.trim()) {
+                                                options.vfs?.rename(fullPath, newName.trim());
+                                                render();
+                                            }
+                                        }
+                                    });
+                                }
+                            },
+                            { separator: true },
+                            {
+                                text: 'Properties',
+                                action: () => {
+                                    options.kernel?.showDialog({
+                                        title: `${item} Properties`,
+                                        message: `Type: ${stat?.type === 'dir' ? 'File Folder' : 'File'}\nLocation: C:\\Desktop\nSize: ${stat?.content ? stat.content.length : 0} bytes`,
+                                        type: 'info'
+                                    });
+                                }
+                            }
+                        ]);
+                    }
+                };
+
+                iconsContainer.appendChild(itemEl);
+            });
+        };
+
+        targetContainer.onclick = () => {
+            iconsContainer.querySelectorAll('.extrax-desktop-item').forEach(i => i.classList.remove('selected'));
+        };
+
+        const existingObj = (targetContainer as unknown as { _extraxDesktop?: ExtraXDesktopInstance })._extraxDesktop;
+        if (existingObj) {
+            if (options.backgroundImage) {
+                existingObj.setWallpaper(options.backgroundImage);
+            }
+            existingObj.render();
+            return existingObj;
+        }
+
+        render();
+
+        if (options.vfs) {
+            options.vfs.watch(vfsPath, render);
+        }
+
+        const instance: ExtraXDesktopInstance = {
+            container: targetContainer,
+            iconsContainer,
+            render,
+            setWallpaper: (url: string) => {
+                targetContainer.style.backgroundImage = `url("${url}")`;
+            }
+        };
+
+        (targetContainer as unknown as { _extraxDesktop?: ExtraXDesktopInstance })._extraxDesktop = instance;
+        return instance;
     }
 }

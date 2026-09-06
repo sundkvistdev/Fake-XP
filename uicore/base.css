@@ -553,6 +553,11 @@ input, textarea, select {
             align-items: center;
             justify-content: center;
 
+            &.radio-bullet {
+                font-size: 0.55rem;
+                line-height: 1;
+            }
+
             > img {
                 max-width: 1.125rem;
                 max-height: 1.125rem;
